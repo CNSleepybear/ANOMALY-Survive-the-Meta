@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>规则异常 // ANOMALY: SURVIVE THE META</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="960" height="540"></canvas>
+        <div class="glitch-overlay" id="glitchOverlay"></div>
+        <div class="scanlines"></div>
+
+        <!-- UI Layer -->
+        <div id="uiLayer">
+            <!-- Top HUD -->
+            <div class="hud-top">
+                <div class="hud-card" id="cardHp">
+                    <div class="hud-label">▶ System_Integrity</div>
+                    <div class="hud-value" id="hpValue">100</div>
+                    <div class="hp-bar"><div class="hp-fill" id="hpBar" style="width:100%"></div></div>
+                    <div class="xp-bar"><div class="xp-fill" id="xpBar" style="width:0%"></div></div>
+                    <div class="hud-label" style="margin-top:2px;">LV.<span id="lvlValue">1</span></div>
+                </div>
+                <div class="hud-card">
+                    <div class="hud-label">▶ Meta_Iteration</div>
+                    <div class="hud-value" id="waveValue">1</div>
+                </div>
+                <div class="hud-card">
+                    <div class="hud-label">▶ Data_Harvested</div>
+                    <div class="hud-value" id="scoreValue">0</div>
+                </div>
+                <div class="hud-card" id="comboBlock">
+                    <div class="hud-label">▶ Chain_Combo</div>
+                    <div class="hud-value" id="comboValue" style="color:#f39c12;">x1</div>
+                </div>
+            </div>
+
+            <!-- Rule Display -->
+            <div class="rule-display" id="ruleDisplay">
+                <div class="rule-warning" id="ruleWarning">⚠ RULE ANOMALY ⚠</div>
+                <div class="rule-name" id="ruleName">规则加载中...</div>
+                <div class="rule-desc-small" id="ruleDescSmall"></div>
+            </div>
+
+            <!-- Rule Timer -->
+            <div class="rule-timer" id="ruleTimer">
+                <div>ANOMALY PERSISTENCE</div>
+                <div class="bar"><div class="bar-fill" id="ruleTimerBar" style="width:100%"></div></div>
+            </div>
+
+            <!-- Rule Signature -->
+            <div class="rule-signature" id="ruleSignature"></div>
+
+            <!-- Weapon HUD -->
+            <div class="weapon-hud" id="weaponHud">
+                <div class="weapon-slot active" data-w="0">🔫<span class="key-hint">1</span></div>
+                <div class="weapon-slot" data-w="1">💥<span class="key-hint">2</span></div>
+                <div class="weapon-slot" data-w="2">⚡<span class="key-hint">3</span></div>
+                <div class="weapon-slot" data-w="3">🎯<span class="key-hint">4</span></div>
+            </div>
+
+            <!-- Upgrade Popup -->
+            <div class="upgrade-popup" id="upgradePopup"></div>
+
+            <!-- Mobile Controls -->
+            <div class="mobile-controls" id="mobileControls">
+                <div class="mobile-joystick-zone" id="joystickZone">
+                    <div class="mobile-joystick-thumb" id="joystickThumb"></div>
+                </div>
+                <div class="mobile-btn-shoot" id="mobileShootBtn">FIRE</div>
+                <div class="mobile-btn-switch" id="mobileSwitchBtn">⇄</div>
+            </div>
+
+            <!-- Performance HUD -->
+            <div class="perf-hud" id="perfHud">FPS: <span>60</span> | E: <span>0</span> | B: <span>0</span> | P: <span>0</span></div>
+
+            <!-- Achievement Toast -->
+            <div class="achievement-toast" id="achievementToast">
+                <div class="ach-title">ACHIEVEMENT UNLOCKED</div>
+                <div class="ach-name">-</div>
+                <div class="ach-desc">-</div>
+            </div>
+
+            <!-- Fake BSOD Popup -->
+            <div class="fake-popup" id="fakePopup">
+                <div class="fake-popup-title">⚠ CRITICAL_EXCEPTION.sys</div>
+                <p>A fatal exception 0x8F00FF66 has occurred in core thread. Memory buffer is spilling into active visual sectors.</p>
+                <br>
+                <p>* Click window anywhere to suppress threat.</p>
+                <p>* Do not stand still while clearing buffer.</p>
+            </div>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="startScreen">
+            <h1 class="glitch-title">规则异常</h1>
+            <div class="subtitle">ANOMALY: SURVIVE THE META</div>
+            <button class="btn" id="startBtn">INITIALIZE CORE</button>
+            <div class="hint">
+                [W][A][S][D] / Arrow Keys : Movement<br>
+                [Mouse] Aim &amp; Click : Fire Weapon<br>
+                [1-4] / Q / E / Scroll : Switch Weapon | [F] : Overclock Mode<br>
+                [Shift] : On / Off Auto Fire<br>
+                <br>
+                <span style="color:#00ff66">WARNING: World rules rewrite every ~13 seconds.</span><br>
+                <span style="color:#ff0055">25+ anomaly rules | Boss fights | Upgrade system</span>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen">
+            <div class="game-over-title">CORE_FAILURE</div>
+            <div class="death-reason" id="deathReason">System termination</div>
+            <div class="final-stats">
+                Survival: <span class="num" id="finalTime">0</span>s |
+                Iteration: <span class="num" id="finalWave">1</span><br>
+                Score: <span class="num" id="finalScore">0</span> |
+                Level: <span class="num" id="finalLvl">1</span> |
+                Kills: <span class="num" id="finalKills">0</span>
+            </div>
+            <button class="btn" id="restartBtn" style="border-color:#ff0055;color:#ff0055;box-shadow:0 0 15px rgba(255,0,85,0.2),inset 0 0 15px rgba(255,0,85,0.1);">REBOOT SYSTEM</button>
+        </div>
+    </div>
+
+    <script src="js/audio.js"></script>
+    <script src="js/rules.js"></script>
+    <script src="js/upgrades.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

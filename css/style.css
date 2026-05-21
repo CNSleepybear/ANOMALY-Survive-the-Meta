@@ -1,0 +1,699 @@
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Noto+Sans+SC:wght@400;700;900&display=swap');
+
+:root {
+    --neon: #00ff66;
+    --neon-dim: #00aa44;
+    --neon-glow: rgba(0, 255, 102, 0.3);
+    --danger: #ff0055;
+    --danger-glow: rgba(255, 0, 85, 0.4);
+    --accent: #00ffff;
+    --bg: #030303;
+    --panel: rgba(5, 15, 5, 0.88);
+    --gold: #f39c12;
+    --blue: #3498db;
+    --purple: #9b59b6;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background: var(--bg);
+    color: var(--neon);
+    font-family: 'Fira Code', 'Noto Sans SC', monospace;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#gameContainer {
+    position: relative;
+    width: 1024px;
+    height: 576px;
+    background: #000;
+    border: 1px solid var(--neon);
+    box-shadow: 0 0 30px var(--neon-glow), inset 0 0 60px rgba(0, 255, 102, 0.03);
+    overflow: hidden;
+    max-width: 100vw;
+    max-height: 100vh;
+}
+#gameContainer.rule-active {
+    box-shadow: 0 0 50px rgba(255, 0, 85, 0.4), 0 0 100px rgba(0, 255, 255, 0.15);
+    border-color: var(--danger);
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* CRT Scanlines overlay */
+.scanlines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(0deg,
+        transparent, transparent 2px,
+        rgba(0, 255, 102, 0.015) 2px,
+        rgba(0, 255, 102, 0.015) 4px);
+    pointer-events: none;
+    z-index: 15;
+}
+
+/* Glitch overlay for rule warning */
+.glitch-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.08s;
+    background: repeating-linear-gradient(0deg,
+        transparent, transparent 3px,
+        rgba(255, 0, 85, 0.04) 3px,
+        rgba(0, 255, 255, 0.04) 6px);
+}
+.glitch-overlay.active {
+    opacity: 1;
+    animation: glitchShake 0.25s infinite;
+}
+@keyframes glitchShake {
+    0%, 100% { transform: translate(0); }
+    20% { transform: translate(-4px, 3px); }
+    40% { transform: translate(4px, -2px); }
+    60% { transform: translate(-3px, -4px); }
+    80% { transform: translate(3px, 4px); }
+}
+
+/* UI Layer */
+#uiLayer {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 20;
+}
+
+/* HUD Top */
+.hud-top {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    right: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    pointer-events: auto;
+}
+
+.hud-card {
+    background: var(--panel);
+    border: 1px solid var(--neon-dim);
+    padding: 8px 14px;
+    min-width: 100px;
+    box-shadow: inset 0 0 10px var(--neon-glow);
+    position: relative;
+    transition: all 0.2s;
+}
+.hud-card.glitched {
+    animation: glitchCard 0.15s infinite;
+}
+@keyframes glitchCard {
+    0% { transform: translate(2px, -1px); border-color: var(--danger); }
+    50% { transform: translate(-1px, 2px); border-color: var(--accent); }
+    100% { transform: translate(1px, 1px); border-color: var(--neon); }
+}
+
+.hud-label {
+    font-size: 9px;
+    color: var(--neon-dim);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 3px;
+    font-family: 'Fira Code', monospace;
+}
+
+.hud-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--neon);
+    text-shadow: 0 0 8px var(--neon-glow);
+    font-family: 'Fira Code', monospace;
+}
+
+.hp-bar {
+    width: 140px;
+    height: 5px;
+    background: #051505;
+    margin-top: 5px;
+    border: 1px solid var(--neon-dim);
+    overflow: hidden;
+}
+.hp-fill {
+    height: 100%;
+    background: var(--neon);
+    box-shadow: 0 0 8px var(--neon);
+    transition: width 0.15s ease-out;
+    width: 100%;
+}
+.hp-fill.shield {
+    background: var(--blue);
+    box-shadow: 0 0 8px rgba(52, 152, 219, 0.6);
+}
+
+.xp-bar {
+    width: 140px;
+    height: 3px;
+    background: #151005;
+    margin-top: 3px;
+    border: 1px solid #554410;
+    overflow: hidden;
+}
+.xp-fill {
+    height: 100%;
+    background: var(--gold);
+    transition: width 0.2s;
+    width: 0%;
+}
+
+/* Rule Display */
+.rule-display {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    width: 80%;
+}
+.rule-display.active {
+    opacity: 1;
+}
+.rule-warning {
+    font-family: 'Fira Code', monospace;
+    font-size: 44px;
+    font-weight: 700;
+    color: var(--danger);
+    text-shadow: 0 0 25px var(--danger-glow);
+    animation: warningPulse 0.4s infinite alternate;
+    letter-spacing: 4px;
+}
+@keyframes warningPulse {
+    from { opacity: 0.6; transform: scale(1); }
+    to { opacity: 1; transform: scale(1.06); }
+}
+.rule-name {
+    font-size: 22px;
+    color: #fff;
+    margin-top: 12px;
+    font-weight: 700;
+    text-shadow: 0 0 15px rgba(255,255,255,0.4);
+}
+.rule-desc-small {
+    font-size: 12px;
+    color: #888;
+    margin-top: 6px;
+    font-family: 'Fira Code', monospace;
+}
+
+/* Rule Timer */
+.rule-timer {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Fira Code', monospace;
+    font-size: 10px;
+    color: #555;
+    text-align: center;
+    pointer-events: none;
+    display: none;
+}
+.rule-timer.active { display: block; }
+.rule-timer .bar {
+    width: 300px;
+    height: 4px;
+    background: #111;
+    margin-top: 6px;
+    border: 1px solid #333;
+    overflow: hidden;
+}
+.rule-timer .bar-fill {
+    height: 100%;
+    background: var(--gold);
+    transition: width 0.1s linear;
+    width: 100%;
+}
+
+/* Rule Signature */
+.rule-signature {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 46px;
+    height: 46px;
+    border: 2px solid;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Fira Code', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0.7);
+}
+.rule-signature.active {
+    opacity: 1;
+    animation: sigPulse 1s infinite;
+}
+@keyframes sigPulse {
+    0%, 100% { box-shadow: 0 0 8px currentColor; }
+    50% { box-shadow: 0 0 20px currentColor, 0 0 35px currentColor; }
+}
+.sig-physics { border-color: var(--purple); color: var(--purple); }
+.sig-time { border-color: var(--blue); color: var(--blue); }
+.sig-space { border-color: var(--neon); color: var(--neon); }
+.sig-entity { border-color: var(--danger); color: var(--danger); }
+.sig-interact { border-color: var(--gold); color: var(--gold); }
+.sig-perception { border-color: #ecf0f1; color: #ecf0f1; }
+.sig-chaos { border-color: #e91e63; color: #e91e63; }
+
+/* Weapon HUD */
+.weapon-hud {
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+    display: flex;
+    gap: 6px;
+    pointer-events: auto;
+}
+.weapon-slot {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #333;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Fira Code', monospace;
+    font-size: 18px;
+    color: #555;
+    transition: all 0.2s;
+    position: relative;
+    cursor: pointer;
+}
+.weapon-slot:hover { border-color: #666; }
+.weapon-slot.active {
+    border-color: var(--neon);
+    color: var(--neon);
+    box-shadow: 0 0 15px var(--neon-glow), inset 0 0 10px var(--neon-glow);
+    background: rgba(0, 255, 102, 0.08);
+}
+.weapon-slot .key-hint {
+    position: absolute;
+    bottom: -14px;
+    font-size: 8px;
+    color: #444;
+    letter-spacing: 0;
+}
+
+/* Combo Block */
+#comboBlock {
+    opacity: 0;
+    transition: opacity 0.3s;
+    text-align: center;
+    min-width: 60px;
+}
+#comboBlock .hud-value {
+    color: var(--gold);
+    text-shadow: 0 0 8px rgba(243, 156, 18, 0.5);
+}
+
+/* Upgrade Popup */
+.upgrade-popup {
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    pointer-events: all;
+    z-index: 25;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.upgrade-popup.active { opacity: 1; }
+.upgrade-option {
+    background: rgba(5, 15, 5, 0.92);
+    border: 1px solid var(--neon-dim);
+    color: var(--neon);
+    padding: 14px 18px;
+    cursor: pointer;
+    font-family: 'Fira Code', 'Noto Sans SC', sans-serif;
+    font-size: 12px;
+    text-align: center;
+    transition: all 0.25s;
+    min-width: 120px;
+    box-shadow: inset 0 0 15px var(--neon-glow);
+    pointer-events: all;
+}
+.upgrade-option:hover {
+    border-color: var(--gold);
+    box-shadow: 0 0 25px rgba(243, 156, 18, 0.3), inset 0 0 15px rgba(243, 156, 18, 0.1);
+    background: rgba(20, 15, 0, 0.95);
+    transform: translateY(-3px);
+}
+.upgrade-option .upgrade-icon {
+    font-size: 32px;
+    display: block;
+    margin-bottom: 6px;
+}
+.upgrade-option .upgrade-name {
+    font-weight: 700;
+    font-size: 13px;
+    display: block;
+    margin-bottom: 3px;
+}
+.upgrade-option .upgrade-desc {
+    font-size: 10px;
+    color: #888;
+    font-family: 'Fira Code', monospace;
+}
+
+/* Screens */
+#startScreen, #gameOverScreen {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    transition: opacity 0.4s;
+}
+#gameOverScreen {
+    background: rgba(3, 3, 3, 0.94);
+    display: none;
+}
+#gameOverScreen.active { display: flex; }
+
+.glitch-title {
+    font-size: 68px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 8px;
+    position: relative;
+    text-shadow: 3px 3px 0 var(--danger), -3px -3px 0 var(--accent);
+    animation: titleGlitch 3s infinite;
+}
+@keyframes titleGlitch {
+    0%, 90%, 100% { text-shadow: 3px 3px 0 var(--danger), -3px -3px 0 var(--accent); }
+    91% { text-shadow: -4px 3px 0 var(--danger), 4px -3px 0 var(--accent); }
+    93% { text-shadow: 4px -3px 0 var(--danger), -4px 3px 0 var(--accent); }
+    95% { text-shadow: 3px 3px 0 var(--accent), -3px -3px 0 var(--danger); }
+}
+
+.subtitle {
+    font-family: 'Fira Code', monospace;
+    font-size: 12px;
+    color: var(--neon-dim);
+    letter-spacing: 6px;
+    margin-top: 8px;
+    margin-bottom: 40px;
+}
+
+.btn {
+    background: transparent;
+    border: 1px solid var(--neon);
+    color: var(--neon);
+    padding: 14px 40px;
+    font-size: 15px;
+    font-family: 'Fira Code', 'Noto Sans SC', monospace;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 30px;
+    box-shadow: 0 0 15px var(--neon-glow), inset 0 0 15px var(--neon-glow);
+    transition: all 0.3s;
+    letter-spacing: 3px;
+    position: relative;
+    overflow: hidden;
+}
+.btn:hover {
+    background: var(--neon);
+    color: #000;
+    box-shadow: 0 0 30px var(--neon-glow);
+}
+.btn::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(0,255,102,0.1), transparent);
+    transform: rotate(45deg);
+    transition: all 0.5s;
+}
+.btn:hover::before {
+    left: 100%;
+}
+
+.hint {
+    margin-top: 30px;
+    font-size: 11px;
+    color: #00aa44;
+    text-align: center;
+    line-height: 2;
+    font-family: 'Fira Code', monospace;
+}
+
+.game-over-title {
+    font-size: 46px;
+    font-weight: 900;
+    color: var(--danger);
+    margin-bottom: 10px;
+    letter-spacing: 4px;
+    text-shadow: 0 0 20px var(--danger-glow);
+}
+
+.death-reason {
+    font-family: 'Fira Code', monospace;
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 10px;
+}
+
+.final-stats {
+    font-size: 13px;
+    color: #aaa;
+    margin-bottom: 24px;
+    text-align: center;
+    line-height: 2;
+    font-family: 'Fira Code', monospace;
+}
+.final-stats .num {
+    color: var(--gold);
+    font-weight: 700;
+}
+
+/* Fake BSOD Popup */
+.fake-popup {
+    position: absolute;
+    background: #0000aa;
+    color: #ffffff;
+    font-family: 'Fira Code', monospace;
+    border: 2px solid #ffffff;
+    box-shadow: 10px 10px 0px rgba(0,0,0,0.5);
+    padding: 20px;
+    width: 400px;
+    z-index: 50;
+    pointer-events: auto;
+    cursor: move;
+    display: none;
+    font-size: 12px;
+    line-height: 1.6;
+}
+.fake-popup-title {
+    background: #ffffff;
+    color: #0000aa;
+    padding: 3px 6px;
+    margin: -20px -20px 15px -20px;
+    font-weight: bold;
+    font-size: 13px;
+}
+
+/* Mobile Controls */
+.mobile-controls {
+    display: none;
+    position: absolute;
+    bottom: 18px;
+    left: 18px;
+    right: 18px;
+    pointer-events: none;
+    z-index: 30;
+}
+.mobile-joystick-zone {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 255, 102, 0.25);
+    background: rgba(0, 255, 102, 0.03);
+    position: relative;
+    pointer-events: all;
+    touch-action: none;
+}
+.mobile-joystick-thumb {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(0, 255, 102, 0.35);
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    transition: none;
+    box-shadow: 0 0 10px var(--neon-glow);
+}
+.mobile-btn-shoot {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 255, 102, 0.4);
+    background: rgba(0, 255, 102, 0.12);
+    position: absolute;
+    right: 25px;
+    bottom: 8px;
+    pointer-events: all;
+    touch-action: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--neon);
+    font-family: 'Fira Code', monospace;
+    box-shadow: 0 0 15px var(--neon-glow);
+}
+.mobile-btn-switch {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 255, 102, 0.3);
+    background: rgba(0, 255, 102, 0.06);
+    position: absolute;
+    right: 105px;
+    bottom: 22px;
+    pointer-events: all;
+    touch-action: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+    color: var(--neon-dim);
+}
+
+/* Performance HUD */
+.perf-hud {
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    font-family: 'Fira Code', monospace;
+    font-size: 9px;
+    color: #333;
+    pointer-events: none;
+    z-index: 20;
+    line-height: 1.5;
+}
+.perf-hud span { color: #444; }
+
+/* Achievements */
+.achievement-toast {
+    position: absolute;
+    top: 80px;
+    right: -320px;
+    width: 280px;
+    background: var(--panel);
+    border: 1px solid var(--gold);
+    padding: 12px 16px;
+    z-index: 40;
+    transition: right 0.5s ease-out;
+    pointer-events: none;
+    box-shadow: 0 0 20px rgba(243, 156, 18, 0.2);
+}
+.achievement-toast.show {
+    right: 14px;
+}
+.achievement-toast .ach-title {
+    color: var(--gold);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+    font-family: 'Fira Code', monospace;
+}
+.achievement-toast .ach-name {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+}
+.achievement-toast .ach-desc {
+    color: #888;
+    font-size: 10px;
+    margin-top: 2px;
+    font-family: 'Fira Code', monospace;
+}
+
+/* Responsive */
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+    .mobile-controls { display: block; }
+    .weapon-hud {
+        bottom: 100px;
+        right: 10px;
+        gap: 3px;
+    }
+    .weapon-slot {
+        width: 34px;
+        height: 34px;
+        font-size: 15px;
+    }
+    .weapon-slot .key-hint { display: none; }
+    .hud-card {
+        padding: 5px 8px;
+        font-size: 10px;
+        min-width: 55px;
+    }
+    .hud-value { font-size: 14px; }
+    .hp-bar { width: 90px; }
+    .rule-warning { font-size: 30px; }
+    .rule-name { font-size: 18px; }
+    .glitch-title { font-size: 40px; letter-spacing: 4px; }
+    .subtitle { font-size: 10px; letter-spacing: 3px; }
+    .upgrade-popup {
+        bottom: 150px;
+        gap: 6px;
+    }
+    .upgrade-option {
+        padding: 10px 12px;
+        font-size: 10px;
+        min-width: 80px;
+    }
+    .upgrade-option .upgrade-icon { font-size: 24px; }
+    .fake-popup { width: 280px; padding: 14px; font-size: 11px; }
+}
