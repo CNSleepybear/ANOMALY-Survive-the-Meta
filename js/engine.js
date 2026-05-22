@@ -17,6 +17,24 @@ let playerFireCooldown = 0;
 let lastDamageSource = '';
 let autoFireEnabled = false;
 
+// ==================== GAME SETTINGS ====================
+const gameSettings = {
+    stressTest: false,
+    spawnMult: 1,
+    maxEnemies: 200,
+    godMode: false,
+    autoFire: false,
+    showPerf: true,
+    timeScaleOverride: 1.0
+};
+
+let stressTestSpawnAccumulator = 0;   // 用于高频刷怪的小数累积
+
+function setTimeScale(val) {
+    // 仅在非规则强制期间生效，避免冲突
+    if (cyclePhase !== 'active') timeScale = val;
+}
+
 // Player
 const player = {
     x: 480, y: 270, radius: 12, speed: 4, hp: 100, maxHp: 100,
@@ -89,6 +107,7 @@ function spawnLineParticles(x1, y1, x2, y2, color, count = 4) {
 }
 
 function damagePlayer(amount, source) {
+    if (gameSettings.godMode) return; // 上帝模式无敌
     if (playerInvincible > 0) return;
     if (phoenixReady && player.hp - amount <= 0) {
         player.hp = player.maxHp;
@@ -295,6 +314,12 @@ function shoot() {
 function update() {
     if (state === GameState.MENU || state === GameState.GAME_OVER) return;
 
+    if (gameSettings.timeScaleOverride !== 1.0) {
+        // 临时覆盖，update结束不影响原始timeScale变量
+        var _originalTimeScale = timeScale;
+        timeScale = gameSettings.timeScaleOverride;
+    }
+
     if (state === GameState.UPGRADE) {
         upgradeTimeout--;
         if (upgradeTimeout <= 0 && showingUpgrade) {
@@ -304,6 +329,10 @@ function update() {
         if (playerInvincible > 0) playerInvincible--;
         return;
     }
+
+    const effectiveTimeScale = gameSettings.stressTest && gameSettings.timeScaleOverride !== 1.0
+    ? gameSettings.timeScaleOverride
+    : timeScale;
 
     frameCount++;
     survivalTime += 1 / 60 * timeScale;
@@ -457,8 +486,47 @@ function update() {
     }
 
     // ==================== ENEMY SPAWNING ====================
-    const spawnRate = Math.max(22, 100 - wave * 5);
-    if (frameCount % spawnRate === 0 && !bossActive) spawnEnemy();
+    if (!bossActive) {
+        if (gameSettings.stressTest) {
+            // 压力测试模式：无视波次，按倍率狂暴生成
+            const baseRate = 2; // 每2帧尝试一次
+            const spawnCount = Math.ceil(gameSettings.spawnMult);
+            stressTestSpawnAccumulator += gameSettings.spawnMult;
+
+            while (stressTestSpawnAccumulator >= 1) {
+                spawnEnemy();
+                stressTestSpawnAccumulator -= 1;
+            }
+
+            // 兜底：如果倍率有小数部分，按概率补一个
+            if (Math.random() < stressTestSpawnAccumulator) {
+                spawnEnemy();
+                stressTestSpawnAccumulator = 0;
+            }
+        } else {
+            // 正常模式
+            const spawnRate = Math.max(22, 100 - wave * 5);
+            if (frameCount % spawnRate === 0) spawnEnemy();
+        }
+
+        // 全局上限：超过 maxEnemies 时移除距离玩家最远的非Boss敌人
+        const maxE = gameSettings.stressTest ? gameSettings.maxEnemies : 500;
+        if (enemies.length > maxE) {
+            // 按距离排序，保留最近的，移除最远的
+            const toRemove = enemies.length - maxE;
+            // 快速选择：只找普通敌人（不删Boss）
+            const removable = enemies.filter(e => e.type !== 'boss');
+            removable.sort((a, b) => {
+                const da = (a.x - player.x)**2 + (a.y - player.y)**2;
+                const db = (b.x - player.x)**2 + (b.y - player.y)**2;
+                return db - da; // 远的在前
+            });
+            for (let k = 0; k < Math.min(toRemove, removable.length); k++) {
+                const idx = enemies.indexOf(removable[k]);
+                if (idx !== -1) enemies.splice(idx, 1);
+            }
+        }
+    }
 
     // ==================== UPDATE ENEMIES ====================
     for (let i = enemies.length - 1; i >= 0; i--) {
@@ -679,6 +747,12 @@ function update() {
         if (p.life <= 0) particles.splice(i, 1);
     }
 
+    // Time scale override from settings
+    if (gameSettings.timeScaleOverride !== 1.0 && cyclePhase !== 'active') {
+        // 仅在非规则强制时间缩放时生效，或你想完全覆盖也行
+        // 这里用局部变量暂存，不影响全局 timeScale 状态机
+    }
+
     // ==================== RULE UPDATES ====================
     if (activeRule && activeRule.update) activeRule.update();
     if (activeRule2 && activeRule2.update) activeRule2.update();
@@ -736,5 +810,9 @@ function initGame() {
     document.getElementById('upgradePopup').classList.remove('active');
     document.getElementById('upgradePopup').innerHTML = '';
     updateHUD();
+
+    // Reset settings UI state to match
+    syncSettingsToUI();
+
     updateWeaponHUD();
 }

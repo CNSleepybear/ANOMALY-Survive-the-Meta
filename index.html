@@ -93,6 +93,63 @@
             </div>
         </div>
 
+        <div class="settings-btn" id="settingsBtn">⚙</div>
+
+        <!-- Settings Panel -->
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-header">
+                <span>SYSTEM_CONFIG</span>
+                <div class="settings-close" id="settingsClose">✕</div>
+            </div>
+            <div class="settings-body">
+                <div class="setting-row">
+                    <label class="setting-label">Stress Test Mode</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="settingStressTest">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <label class="setting-label">Spawn Multiplier <span id="spawnMultVal">1x</span></label>
+                    <input type="range" id="settingSpawnMult" min="1" max="20" value="1" class="setting-slider">
+                </div>
+                <div class="setting-row">
+                    <label class="setting-label">Max Enemies <span id="maxEnemiesVal">200</span></label>
+                    <input type="range" id="settingMaxEnemies" min="50" max="2000" value="200" step="50" class="setting-slider">
+                </div>
+                <div class="setting-row">
+                    <label class="setting-label">God Mode</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="settingGodMode">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <label class="setting-label">Auto Fire</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="settingAutoFire">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <label class="setting-label">Show Perf HUD</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="settingPerfHud" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <label class="setting-label">Time Scale <span id="timeScaleVal">1.0</span></label>
+                    <input type="range" id="settingTimeScale" min="0.1" max="3.0" value="1.0" step="0.1" class="setting-slider">
+                </div>
+            </div>
+            <div class="settings-footer">
+                <div class="stress-stats" id="stressStats" style="display:none;">
+                    Target: <span id="targetSpawn">0</span>/s | Active: <span id="activeEnemies">0</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Start Screen -->
         <div id="startScreen">
             <h1 class="glitch-title">规则异常</h1>

@@ -253,3 +253,118 @@ console.log('%c[ANOMALY] System initialized', 'color: #00ff66; font-family: mono
 console.log('%c▶ Weapons: 1-4 | Q/E | MouseWheel', 'color: #00aa44; font-family: monospace;');
 console.log('%c▶ 25+ Rules | Boss Battles | Upgrade System', 'color: #00aa44; font-family: monospace;');
 console.log('%c▶ Mobile: Virtual joystick auto-detected', 'color: #00aa44; font-family: monospace;');
+
+// ==================== SETTINGS SYSTEM ====================
+
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsPanel = document.getElementById('settingsPanel');
+const settingsClose = document.getElementById('settingsClose');
+
+function toggleSettings(show) {
+    if (show) {
+        settingsPanel.classList.add('active');
+        container.classList.add('settings-open');
+        // 打开设置时暂停游戏逻辑（可选）
+        // state = GameState.MENU; 
+    } else {
+        settingsPanel.classList.remove('active');
+        container.classList.remove('settings-open');
+    }
+}
+
+settingsBtn.addEventListener('click', () => toggleSettings(true));
+settingsClose.addEventListener('click', () => toggleSettings(false));
+
+// 点击面板外部关闭
+document.addEventListener('click', (e) => {
+    if (settingsPanel.classList.contains('active') &&
+        !settingsPanel.contains(e.target) &&
+        e.target !== settingsBtn) {
+        toggleSettings(false);
+    }
+});
+
+// Stress Test Toggle
+document.getElementById('settingStressTest').addEventListener('change', (e) => {
+    gameSettings.stressTest = e.target.checked;
+    document.getElementById('stressStats').style.display = e.target.checked ? 'block' : 'none';
+    if (e.target.checked) {
+        showAchievement('STRESS TEST', 'High-density enemy spawn activated');
+    }
+});
+
+// Spawn Multiplier
+document.getElementById('settingSpawnMult').addEventListener('input', (e) => {
+    gameSettings.spawnMult = parseInt(e.target.value);
+    document.getElementById('spawnMultVal').textContent = e.target.value + 'x';
+});
+
+// Max Enemies
+document.getElementById('settingMaxEnemies').addEventListener('input', (e) => {
+    gameSettings.maxEnemies = parseInt(e.target.value);
+    document.getElementById('maxEnemiesVal').textContent = e.target.value;
+});
+
+// God Mode
+document.getElementById('settingGodMode').addEventListener('change', (e) => {
+    gameSettings.godMode = e.target.checked;
+});
+
+// Auto Fire (UI 与 Shift 键同步)
+document.getElementById('settingAutoFire').addEventListener('change', (e) => {
+    gameSettings.autoFire = e.target.checked;
+    autoFireEnabled = e.target.checked;
+});
+
+// Perf HUD
+document.getElementById('settingPerfHud').addEventListener('change', (e) => {
+    gameSettings.showPerf = e.target.checked;
+    document.getElementById('perfHud').style.display = e.target.checked ? 'block' : 'none';
+});
+
+// Time Scale
+document.getElementById('settingTimeScale').addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value);
+    gameSettings.timeScaleOverride = val;
+    document.getElementById('timeScaleVal').textContent = val.toFixed(1);
+    // 直接覆盖全局 timeScale（规则系统会临时覆盖它，规则结束恢复）
+    if (cyclePhase !== 'active') timeScale = val;
+});
+
+// 同步设置到 UI（用于 initGame 重置后恢复）
+function syncSettingsToUI() {
+    document.getElementById('settingStressTest').checked = gameSettings.stressTest;
+    document.getElementById('settingSpawnMult').value = gameSettings.spawnMult;
+    document.getElementById('spawnMultVal').textContent = gameSettings.spawnMult + 'x';
+    document.getElementById('settingMaxEnemies').value = gameSettings.maxEnemies;
+    document.getElementById('maxEnemiesVal').textContent = gameSettings.maxEnemies;
+    document.getElementById('settingGodMode').checked = gameSettings.godMode;
+    document.getElementById('settingAutoFire').checked = autoFireEnabled;
+    document.getElementById('settingPerfHud').checked = gameSettings.showPerf;
+    document.getElementById('perfHud').style.display = gameSettings.showPerf ? 'block' : 'none';
+    document.getElementById('settingTimeScale').value = gameSettings.timeScaleOverride;
+    document.getElementById('timeScaleVal').textContent = gameSettings.timeScaleOverride.toFixed(1);
+    document.getElementById('stressStats').style.display = gameSettings.stressTest ? 'block' : 'none';
+}
+
+// 性能监控增强：在 gameLoop 中更新 stress stats
+const originalTrackFPS = trackFPS;
+trackFPS = function(timestamp) {
+    originalTrackFPS(timestamp);
+    if (gameSettings.stressTest && frameCount % 10 === 0) {
+        const targetSpawn = Math.round(60 * gameSettings.spawnMult / 2); // 近似理论值
+        document.getElementById('targetSpawn').textContent = targetSpawn;
+        document.getElementById('activeEnemies').textContent = enemies.length;
+    }
+};
+
+// 让 Shift 键也能同步 Auto Fire UI
+const originalKeyDown = document.onkeydown;
+document.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'shift') {
+        setTimeout(() => {
+            document.getElementById('settingAutoFire').checked = autoFireEnabled;
+            gameSettings.autoFire = autoFireEnabled;
+        }, 0);
+    }
+});
