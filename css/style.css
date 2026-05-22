@@ -353,13 +353,31 @@ canvas {
     left: 50%;
     transform: translateX(-50%);
     display: flex;
+    flex-direction: column;
     gap: 12px;
     pointer-events: all;
     z-index: 25;
     opacity: 0;
     transition: opacity 0.3s;
+    align-items: center;
 }
 .upgrade-popup.active { opacity: 1; }
+
+.build-path-label {
+    color: var(--gold);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    text-shadow: 0 0 10px rgba(243, 156, 18, 0.3);
+}
+
+.upgrade-options-row {
+    display: flex;
+    gap: 12px;
+}
+
 .upgrade-option {
     background: rgba(5, 15, 5, 0.92);
     border: 1px solid var(--neon-dim);
@@ -379,6 +397,11 @@ canvas {
     box-shadow: 0 0 25px rgba(243, 156, 18, 0.3), inset 0 0 15px rgba(243, 156, 18, 0.1);
     background: rgba(20, 15, 0, 0.95);
     transform: translateY(-3px);
+}
+.upgrade-option.preferred-upgrade {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 15px rgba(0, 255, 255, 0.1);
+    background: rgba(0, 20, 20, 0.9);
 }
 .upgrade-option .upgrade-icon {
     font-size: 32px;
