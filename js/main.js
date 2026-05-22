@@ -9,29 +9,35 @@ window.addEventListener('blur', () => { mouse.down = false; });
 let lastTime = 0;
 let fps = 60;
 let frameTimes = [];
+let perfTimerAccum = 0;
 
-function trackFPS(timestamp) {
-    if (lastTime) {
-        const dt = timestamp - lastTime;
-        frameTimes.push(dt);
+// ==================== GAME LOOP ====================
+
+function gameLoop(timestamp) {
+    // Delta time: ratio of real frame time to 60fps target (16.667ms)
+    // dt=1 at 60fps, dt=0.5 at 120fps, dt=2 at 30fps — clamped at 3 to prevent spiral-of-death
+    const dt = lastTime > 0 ? Math.min((timestamp - lastTime) / 16.667, 3.0) : 1;
+
+    // FPS tracking
+    if (lastTime > 0) {
+        const elapsed = timestamp - lastTime;
+        frameTimes.push(elapsed);
         if (frameTimes.length > 30) frameTimes.shift();
         const avg = frameTimes.reduce((a, b) => a + b, 0) / frameTimes.length;
         fps = Math.round(1000 / avg);
     }
     lastTime = timestamp;
-}
 
-// ==================== GAME LOOP ====================
-
-function gameLoop(timestamp) {
-    trackFPS(timestamp);
     try {
-        update();
-        render();
+        update(dt);
+        render(dt);
     } catch (e) {
         console.error('[ANOMALY] Game loop error:', e);
     }
-    if (frameCount % 30 === 0) {
+    // Perf HUD update every ~0.5s (time-based, not frame-based)
+    perfTimerAccum += dt;
+    if (perfTimerAccum >= 30) {
+        perfTimerAccum -= 30;
         const perfEl = document.getElementById('perfHud');
         if (perfEl) {
             perfEl.innerHTML = `FPS: <span>${fps}</span> | E: <span>${enemies.length}</span> | B: <span>${bullets.length}</span> | P: <span>${particles.length}</span>`;
@@ -355,12 +361,4 @@ function syncSettingsToUI() {
     document.getElementById('stressStats').style.display = gameSettings.stressTest ? 'block' : 'none';
 }
 
-// Performance monitoring
-const originalTrackFPS = trackFPS;
-trackFPS = function(timestamp) {
-    originalTrackFPS(timestamp);
-    if (gameSettings.stressTest && frameCount % 10 === 0) {
-        document.getElementById('targetSpawn').textContent = Math.round(60 * gameSettings.spawnMult / 2);
-        document.getElementById('activeEnemies').textContent = enemies.length;
-    }
-};
+// Stress test stats are now updated inline in gameLoop via perfTimerAccum

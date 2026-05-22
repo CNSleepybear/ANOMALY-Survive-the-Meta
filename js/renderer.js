@@ -17,13 +17,13 @@ function initRenderer() {
     }
 }
 
-function render() {
+function render(dt) {
     // Clear with trail effect
     ctx.fillStyle = 'rgba(3, 3, 3, 0.18)';
     ctx.fillRect(0, 0, 960, 540);
 
     // 1. Matrix Data Rain
-    renderMatrixRain();
+    renderMatrixRain(dt);
 
     // 2. Grid lines
     ctx.strokeStyle = 'rgba(0, 40, 20, 0.3)';
@@ -145,7 +145,7 @@ function render() {
     ctx.fillRect(0, 0, 960, 540);
 }
 
-function renderMatrixRain() {
+function renderMatrixRain(dt) {
     ctx.font = '11px "Fira Code", monospace';
     ctx.textAlign = 'center';
     for (let i = 0; i < matrixCols; i++) {
@@ -168,7 +168,7 @@ function renderMatrixRain() {
         }
         ctx.shadowBlur = 0;
 
-        matrixDrops[i] += 10 + Math.random() * 4;
+        matrixDrops[i] += (10 + Math.random() * 4) * dt;
         if (y > 540 + 140) matrixDrops[i] = Math.random() * -100;
     }
 }
@@ -700,7 +700,7 @@ function renderParticles() {
 function renderDamageNumbers() {
     for (let i = damageNumbers.length - 1; i >= 0; i--) {
         const d = damageNumbers[i];
-        d.life--;
+        d.life -= dt;
         d.y += d.vy;
         if (d.life <= 0) { damageNumbers.splice(i, 1); continue; }
 

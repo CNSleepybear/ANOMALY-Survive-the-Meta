@@ -1,6 +1,19 @@
 // ==================== RULE ANOMALY SYSTEM ====================
 // 54 rules across 9 categories with synergy/conflict/opposite system
 
+// Delta-time globals (used by both rules.js and engine.js)
+let _dt = 1;
+const _everyAccums = {};
+function every(key, interval) {
+    if (!_everyAccums[key] || _everyAccums[key] >= interval) _everyAccums[key] = 0;
+    _everyAccums[key] += _dt;
+    if (_everyAccums[key] >= interval) {
+        _everyAccums[key] -= interval;
+        return true;
+    }
+    return false;
+}
+
 const RULES = [
     // --- PHYSICS (7) ---
     {
@@ -85,7 +98,7 @@ const RULES = [
         category: 'space', signature: 'O',
         apply() { screenRotation = Math.PI / 2; },
         remove() { screenRotation = 0; },
-        update() { if (frameCount % 420 === 0) screenRotation += Math.PI / 2; }
+        update() { if (every('screen_rotate', 420)) screenRotation += Math.PI / 2; }
     },
     {
         id: 'gravity_well', name: '重力井', desc: '屏幕中心产生强大引力',
@@ -110,7 +123,7 @@ const RULES = [
         category: 'space', signature: 'HOLE',
         apply() {}, remove() {},
         update() {
-            if (frameCount % 200 === 0 && Math.random() < 0.35) {
+            if (every('wormhole', 200) && Math.random() < 0.35) {
                 player.x = 80 + Math.random() * 800;
                 player.y = 60 + Math.random() * 420;
                 spawnParticles(player.x, player.y, '#9b59b6', 20);
@@ -124,7 +137,7 @@ const RULES = [
         apply() { arenaShrink = 0; },
         remove() { arenaShrink = 0; },
         update() {
-            arenaShrink += 0.08;
+            arenaShrink += 0.08 * _dt;
             const margin = 40 + arenaShrink;
             if (player.x < margin) player.x = margin;
             if (player.x > 960 - margin) player.x = 960 - margin;
@@ -145,7 +158,7 @@ const RULES = [
         remove() { zoomVision = false; canvas.style.transform = 'none'; },
         update() {
             if (!zoomVision) return;
-            zoomPhase += 0.02;
+            zoomPhase += 0.02 * _dt;
             const scale = 1 + Math.sin(zoomPhase) * 0.25;
             canvas.style.transform = `scale(${scale})`;
         }
@@ -156,13 +169,13 @@ const RULES = [
         apply() { dimRifts = []; dimRiftTimer = 0; },
         remove() { dimRifts = []; },
         update() {
-            dimRiftTimer++;
+            dimRiftTimer += _dt;
             if (dimRiftTimer > 300) {
                 dimRiftTimer = 0;
                 dimRifts.push({ x: 100 + Math.random() * 760, y: 80 + Math.random() * 380, life: 240, radius: 40 });
             }
             for (let i = dimRifts.length - 1; i >= 0; i--) {
-                dimRifts[i].life--;
+                dimRifts[i].life -= _dt;
                 const rdx = dimRifts[i].x - player.x, rdy = dimRifts[i].y - player.y;
                 const rd = Math.sqrt(rdx * rdx + rdy * rdy);
                 if (rd < dimRifts[i].radius + 100 && rd > 1) {
@@ -211,7 +224,7 @@ const RULES = [
         category: 'interact', signature: 'S',
         apply() {}, remove() {},
         update() {
-            if (Math.abs(player.vx) < 0.15 && Math.abs(player.vy) < 0.15 && frameCount % 45 === 0) {
+            if (Math.abs(player.vx) < 0.15 && Math.abs(player.vy) < 0.15 && every('stationary_dmg', 45)) {
                 damagePlayer(3, 'stationary_damage');
             }
         }
@@ -227,7 +240,7 @@ const RULES = [
         category: 'interact', signature: 'OC',
         apply() { overclockActive = true; },
         remove() { overclockActive = false; },
-        update() { if (overclockActive && frameCount % 40 === 0) damagePlayer(1.5, 'overclock_mode'); }
+        update() { if (overclockActive && every('overclock_dmg', 40)) damagePlayer(1.5, 'overclock_mode'); }
     },
     {
         id: 'ammo_limited', name: '弹药限制', desc: '需要拾取弹药包，弹匣30发',
@@ -251,8 +264,8 @@ const RULES = [
         remove() { overheatSystem = false; },
         update() {
             if (!overheatSystem) return;
-            if (playerFireCooldown > 0 && overheatValue < 100) overheatValue += 3;
-            else overheatValue = Math.max(0, overheatValue - 1.5);
+            if (playerFireCooldown > 0 && overheatValue < 100) overheatValue += 3 * _dt;
+            else overheatValue = Math.max(0, overheatValue - 1.5 * _dt);
             if (overheatValue >= 100) {
                 playerFireCooldown = Math.max(playerFireCooldown, 90);
                 overheatValue = 0;
@@ -299,7 +312,7 @@ const RULES = [
         remove() { colorChaos = false; canvas.style.filter = 'none'; },
         update() {
             if (!colorChaos) return;
-            colorPhase += 0.03;
+            colorPhase += 0.03 * _dt;
             const hue = Math.sin(colorPhase) * 180;
             canvas.style.filter = `hue-rotate(${hue}deg) invert(${Math.abs(Math.sin(colorPhase * 0.7)) * 0.3})`;
         }
@@ -310,7 +323,7 @@ const RULES = [
         apply() { phantomTimer = 0; },
         remove() {},
         update() {
-            phantomTimer++;
+            phantomTimer += _dt;
             if (phantomTimer > 90 && enemies.length < 40) {
                 phantomTimer = 0;
                 const side = Math.floor(Math.random() * 4);
@@ -364,7 +377,7 @@ const RULES = [
         remove() { timeStutter = false; },
         update() {
             if (!timeStutter) return;
-            stutterTimer++;
+            stutterTimer += _dt;
             if (stutterTimer > 200 && stutterTimer < 224) { timeScale = 0.05; }
             else if (stutterTimer >= 224) { timeScale = 1; stutterTimer = 0; }
         }
@@ -387,7 +400,7 @@ const RULES = [
         category: 'entity', signature: 'C',
         apply() {}, remove() { player.clones = []; },
         update() {
-            if (frameCount % 20 === 0 && (Math.abs(player.vx) > 0.4 || Math.abs(player.vy) > 0.4))
+            if (every('clone_move', 20) && (Math.abs(player.vx) > 0.4 || Math.abs(player.vy) > 0.4))
                 player.clones.push({ x: player.x, y: player.y, life: 140, angle: player.angle });
         }
     },
@@ -396,7 +409,7 @@ const RULES = [
         category: 'entity', signature: 'GHOST',
         apply() { ghostMode = true; },
         remove() { ghostMode = false; },
-        update() { if (ghostMode && frameCount % 35 === 0) damagePlayer(1.2, 'ghost_mode'); }
+        update() { if (ghostMode && every('ghost_dmg', 35)) damagePlayer(1.2, 'ghost_mode'); }
     },
     {
         id: 'phoenix', name: '涅槃协议', desc: '死亡时满血复活一次',
@@ -411,16 +424,16 @@ const RULES = [
         remove() { turrets = []; },
         update() {
             if (!turrets) return;
-            turretTimer++;
+            turretTimer += _dt;
             if (turretTimer > 180) {
                 turretTimer = 0;
                 if (turrets.length < 2) turrets.push({ x: player.x, y: player.y, life: 600, angle: 0 });
             }
             for (let i = turrets.length - 1; i >= 0; i--) {
                 const t = turrets[i];
-                t.life--;
-                t.angle += 0.05;
-                if (t.life % 20 === 0 && enemies.length > 0) {
+                t.life -= _dt;
+                t.angle += 0.05 * _dt;
+                if (every('turret_shot', 20) && enemies.length > 0) {
                     const nearest = enemies.reduce((a, b) => {
                         const da = (a.x - t.x) ** 2 + (a.y - t.y) ** 2;
                         const db = (b.x - t.x) ** 2 + (b.y - t.y) ** 2;
@@ -481,7 +494,7 @@ const RULES = [
         category: 'chaos', signature: 'H',
         apply() {}, remove() {},
         update() {
-            if (frameCount % 80 === 0 && enemies.length > 0) {
+            if (every('bullet_hell', 80) && enemies.length > 0) {
                 for (const e of enemies.slice(0, 3)) {
                     const ba = Math.atan2(player.y - e.y, player.x - e.x);
                     for (let b = 0; b < 5; b++) {
@@ -502,7 +515,7 @@ const RULES = [
         category: 'chaos', signature: 'E',
         apply() { entropyBoost = 0; },
         remove() { entropyBoost = 0; },
-        update() { entropyBoost += 0.0002; if (entropyBoost > 1.2) entropyBoost = 1.2; }
+        update() { entropyBoost += 0.0002 * _dt; if (entropyBoost > 1.2) entropyBoost = 1.2; }
     },
     {
         id: 'double_damage', name: '双倍伤害', desc: '所有人伤害翻倍',
@@ -521,7 +534,7 @@ const RULES = [
         category: 'chaos', signature: 'STORM',
         apply() {}, remove() {},
         update() {
-            if (frameCount % 120 === 0) {
+            if (every('chaos_storm', 120)) {
                 const tx = 50 + Math.random() * 860;
                 const ty = 50 + Math.random() * 440;
                 spawnParticles(tx, ty, '#f1c40f', 25, 5, 40);
@@ -542,7 +555,7 @@ const RULES = [
         remove() { enemyTeleport = false; },
         update() {
             if (!enemyTeleport) return;
-            teleportTimer++;
+            teleportTimer += _dt;
             if (teleportTimer > 120) {
                 teleportTimer = 0;
                 for (const e of enemies) {
@@ -568,14 +581,14 @@ const RULES = [
         apply() { lavaPools = []; lavaTimer = 0; },
         remove() { lavaPools = []; },
         update() {
-            lavaTimer++;
+            lavaTimer += _dt;
             if (lavaTimer > 360) {
                 lavaTimer = 0;
                 lavaPools.push({ x: 80 + Math.random() * 800, y: 60 + Math.random() * 420, radius: 40 + Math.random() * 50, life: 400 });
             }
             for (let i = lavaPools.length - 1; i >= 0; i--) {
                 const l = lavaPools[i];
-                l.life--;
+                l.life -= _dt;
                 const pdx = player.x - l.x, pdy = player.y - l.y;
                 if (Math.sqrt(pdx * pdx + pdy * pdy) < l.radius) damagePlayer(0.8, 'terrain_lava');
                 for (const e of enemies) {
@@ -595,7 +608,7 @@ const RULES = [
         remove() { scoreDecay = false; },
         update() {
             if (!scoreDecay) return;
-            if (frameCount % 60 === 0 && score > 0) {
+            if (every('score_decay', 60) && score > 0) {
                 score = Math.max(0, score - 5);
                 addDamageNumber(480, 30, '-5', 'score');
             }

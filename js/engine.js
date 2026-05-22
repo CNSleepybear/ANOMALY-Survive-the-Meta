@@ -69,8 +69,8 @@ function updateStatusEffects() {
     for (let i = activeStatusEffects.length - 1; i >= 0; i--) {
         const eff = activeStatusEffects[i];
         const def = Object.values(STATUS_TYPES).find(s => s.id === eff.type);
-        eff.duration--;
-        eff.timer++;
+        eff.duration -= _dt;
+        eff.timer += _dt;
 
         if (eff.target === 'player') {
             if (eff.timer >= def.tickRate) {
@@ -143,7 +143,7 @@ const SKILLS = [
         id: 'time_warp', name: '时间裂隙', icon: 'WARP', cooldown: 600, duration: 180,
         desc: '3秒内时间流速减半（仅影响敌人）',
         activate() { timeWarpActive = true; timeWarpTimer = 180; SFX.ruleChange(); },
-        update() { if (timeWarpActive) { timeWarpTimer--; if (timeWarpTimer <= 0) timeWarpActive = false; } }
+        update() { if (timeWarpActive) { timeWarpTimer -= _dt; if (timeWarpTimer <= 0) timeWarpActive = false; } }
     },
     {
         id: 'turret_drop', name: '紧急部署', icon: 'TURRET', cooldown: 480, duration: 0,
@@ -168,7 +168,7 @@ function activateSkill(index) {
 }
 
 function updateSkills() {
-    for (let i = 0; i < skillCooldowns.length; i++) { if (skillCooldowns[i] > 0) skillCooldowns[i]--; }
+    for (let i = 0; i < skillCooldowns.length; i++) { if (skillCooldowns[i] > 0) skillCooldowns[i] -= _dt; }
     for (const skill of SKILLS) { if (skill.update) skill.update(); }
 }
 
@@ -210,9 +210,9 @@ const BOSS_TEMPLATES = [
         mechanisms: {
             init(boss) { boss.phase = 0; boss.phaseTimer = 0; boss.minions = []; },
             update(boss) {
-                boss.phaseTimer++;
+                boss.phaseTimer += _dt;
                 if (boss.phaseTimer < 300) {
-                    if (boss.phaseTimer % 40 === 0) {
+                    if (every('boss_overseer_ring', 40)) {
                         const ba = Math.atan2(player.y - boss.y, player.x - boss.x);
                         for (let i = 0; i < 12; i++) {
                             const angle = ba + (i * Math.PI * 2) / 12;
@@ -220,13 +220,13 @@ const BOSS_TEMPLATES = [
                         }
                     }
                 } else if (boss.phaseTimer < 600) {
-                    if (boss.phaseTimer % 90 === 0 && boss.minions.length < 4) {
+                    if (every('boss_overseer_minion', 90) && boss.minions.length < 4) {
                         const angle = Math.random() * Math.PI * 2;
                         boss.minions.push({ x: boss.x + Math.cos(angle) * 60, y: boss.y + Math.sin(angle) * 60, hp: 40, maxHp: 40, radius: 12, speed: 2.5, damage: 8, type: 'minion', color: '#ff8a80', id: nextEnemyId++ });
                     }
                 } else {
                     boss.speed = boss.baseSpeed * 1.8;
-                    if (boss.phaseTimer % 25 === 0) {
+                    if (every('boss_overseer_rapid', 25)) {
                         const ba = Math.atan2(player.y - boss.y, player.x - boss.x);
                         bullets.push({ x: boss.x, y: boss.y, vx: Math.cos(ba) * 5, vy: Math.sin(ba) * 5, radius: 6, damage: 18, color: '#ff1744', isEnemyBullet: true, pierce: true });
                     }
@@ -235,7 +235,7 @@ const BOSS_TEMPLATES = [
                 for (let i = boss.minions.length - 1; i >= 0; i--) {
                     const m = boss.minions[i];
                     const md = Math.sqrt((player.x - m.x)**2 + (player.y - m.y)**2);
-                    if (md > 0) { m.x += ((player.x - m.x) / md) * m.speed * timeScale; m.y += ((player.y - m.y) / md) * m.speed * timeScale; }
+                    if (md > 0) { m.x += ((player.x - m.x) / md) * m.speed * timeScale * _dt; m.y += ((player.y - m.y) / md) * m.speed * timeScale * _dt; }
                     if (md < player.radius + m.radius) { damagePlayer(m.damage, 'boss_overseer'); boss.minions.splice(i, 1); }
                 }
             },
@@ -247,21 +247,21 @@ const BOSS_TEMPLATES = [
         mechanisms: {
             init(boss) { boss.chargeTimer = 0; boss.charging = false; boss.chargeDir = 0; boss.armor = 0.5; },
             update(boss) {
-                boss.chargeTimer++;
+                boss.chargeTimer += _dt;
                 if (!boss.charging && boss.chargeTimer > 180) {
                     boss.charging = true; boss.chargeDir = Math.atan2(player.y - boss.y, player.x - boss.x); boss.chargeTimer = 0;
                     screenShake = 15; SFX.bossAppear();
                 }
                 if (boss.charging) {
-                    boss.x += Math.cos(boss.chargeDir) * 7 * timeScale;
-                    boss.y += Math.sin(boss.chargeDir) * 7 * timeScale;
-                    if (frameCount % 5 === 0) { spawnParticles(boss.x, boss.y, '#ff5722', 3, 4, 40); lavaPools.push({ x: boss.x, y: boss.y, radius: 25, life: 120 }); }
+                    boss.x += Math.cos(boss.chargeDir) * 7 * timeScale * _dt;
+                    boss.y += Math.sin(boss.chargeDir) * 7 * timeScale * _dt;
+                    if (every('boss_jugg_lava', 5)) { spawnParticles(boss.x, boss.y, '#ff5722', 3, 4, 40); lavaPools.push({ x: boss.x, y: boss.y, radius: 25, life: 120 }); }
                     if (boss.x < 50 || boss.x > 910) { boss.chargeDir = Math.PI - boss.chargeDir; boss.x = Math.max(50, Math.min(910, boss.x)); }
                     if (boss.y < 50 || boss.y > 490) { boss.chargeDir = -boss.chargeDir; boss.y = Math.max(50, Math.min(490, boss.y)); }
                     if (boss.chargeTimer > 90) { boss.charging = false; boss.chargeTimer = 0; }
                 } else {
                     const d = Math.sqrt((player.x - boss.x)**2 + (player.y - boss.y)**2);
-                    if (d > 0) { boss.x += ((player.x - boss.x) / d) * boss.speed * timeScale; boss.y += ((player.y - boss.y) / d) * boss.speed * timeScale; }
+                    if (d > 0) { boss.x += ((player.x - boss.x) / d) * boss.speed * timeScale * _dt; boss.y += ((player.y - boss.y) / d) * boss.speed * timeScale * _dt; }
                 }
             },
             onDeath(boss) { for (const e of enemies) { if (Math.sqrt((e.x - boss.x)**2 + (e.y - boss.y)**2) < 200) e.hp -= 80; } spawnParticles(boss.x, boss.y, '#e91e63', 60, 15, 60); }
@@ -272,7 +272,7 @@ const BOSS_TEMPLATES = [
         mechanisms: {
             init(boss) { boss.teleportTimer = 0; boss.clones = []; },
             update(boss) {
-                boss.teleportTimer++;
+                boss.teleportTimer += _dt;
                 if (boss.teleportTimer > 120) {
                     boss.teleportTimer = 0;
                     boss.clones.push({ x: boss.x, y: boss.y, life: 90, radius: boss.radius });
@@ -282,14 +282,14 @@ const BOSS_TEMPLATES = [
                     spawnParticles(boss.x, boss.y, '#9c27b0', 20); screenShake = 10;
                 }
                 for (let i = boss.clones.length - 1; i >= 0; i--) {
-                    const c = boss.clones[i]; c.life--;
+                    const c = boss.clones[i]; c.life -= _dt;
                     if (c.life <= 0) {
                         if (Math.sqrt((player.x - c.x)**2 + (player.y - c.y)**2) < 80) damagePlayer(20, 'boss_specter');
                         for (const e of enemies) { if (Math.sqrt((e.x - c.x)**2 + (e.y - c.y)**2) < 80) e.hp -= 30; }
                         spawnParticles(c.x, c.y, '#9c27b0', 25); boss.clones.splice(i, 1);
                     }
                 }
-                if (boss.teleportTimer % 30 === 0) {
+                if (every('boss_specter_shoot', 30)) {
                     const ba = Math.atan2(player.y - boss.y, player.x - boss.x);
                     bullets.push({ x: boss.x, y: boss.y, vx: Math.cos(ba) * 2.5, vy: Math.sin(ba) * 2.5, radius: 5, damage: 14, color: '#ce93d8', isEnemyBullet: true, homing: true, homingStrength: 0.08 });
                 }
@@ -302,17 +302,17 @@ const BOSS_TEMPLATES = [
         mechanisms: {
             init(boss) { boss.growth = 0; boss.satellites = []; for (let i = 0; i < 3; i++) boss.satellites.push({ angle: i * 2.09, radius: 70 }); },
             update(boss) {
-                boss.growth += 0.0005; boss.radius = 50 + boss.growth * 20;
+                boss.growth += 0.0005 * _dt; boss.radius = 50 + boss.growth * 20;
                 for (const sat of boss.satellites) {
                     sat.angle += 0.03;
-                    if (frameCount % 45 === 0) {
+                    if (every('boss_titan_sat_shot', 45)) {
                         const ba = Math.atan2(player.y - (boss.y + Math.sin(sat.angle) * sat.radius), player.x - (boss.x + Math.cos(sat.angle) * sat.radius));
                         bullets.push({ x: boss.x + Math.cos(sat.angle) * sat.radius, y: boss.y + Math.sin(sat.angle) * sat.radius, vx: Math.cos(ba) * 4, vy: Math.sin(ba) * 4, radius: 4, damage: 10, color: '#ff9800', isEnemyBullet: true });
                     }
                     const sd = Math.sqrt((player.x - (boss.x + Math.cos(sat.angle) * sat.radius))**2 + (player.y - (boss.y + Math.sin(sat.angle) * sat.radius))**2);
                     if (sd < 12) damagePlayer(8, 'boss_titan');
                 }
-                if (frameCount % 200 === 0) {
+                if (every('boss_titan_shockwave', 200)) {
                     screenShake = 25; spawnParticles(boss.x, boss.y, '#ff9800', 50, 10, 50);
                     const pd = Math.sqrt((player.x - boss.x)**2 + (player.y - boss.y)**2);
                     if (pd < 200) damagePlayer(25, 'boss_titan');
@@ -326,14 +326,14 @@ const BOSS_TEMPLATES = [
         mechanisms: {
             init(boss) { boss.entropyField = 0; },
             update(boss) {
-                boss.entropyField += 0.01;
+                boss.entropyField += 0.01 * _dt;
                 for (let i = bullets.length - 1; i >= 0; i--) {
                     const b = bullets[i];
                     if (b.isEnemyBullet) continue;
                     const bd = Math.sqrt((b.x - boss.x)**2 + (b.y - boss.y)**2);
                     if (bd < 150) { b.vx *= -0.8; b.vy *= -0.8; b.isEnemyBullet = true; b.color = '#00bcd4'; spawnParticles(b.x, b.y, '#00bcd4', 3); }
                 }
-                if (frameCount % 60 === 0) {
+                if (every('boss_entropy_shot', 60)) {
                     const angle = Math.random() * Math.PI * 2;
                     bullets.push({ x: boss.x, y: boss.y, vx: Math.cos(angle) * 3, vy: Math.sin(angle) * 3, radius: 8, damage: 16, color: '#00bcd4', isEnemyBullet: true, entropyOrb: true });
                 }
@@ -348,20 +348,20 @@ const BOSS_TEMPLATES = [
         mechanisms: {
             init(boss) { boss.glitchTimer = 0; boss.mirrorActive = false; },
             update(boss) {
-                boss.glitchTimer++;
-                if (boss.glitchTimer % 150 === 0) {
+                boss.glitchTimer += _dt;
+                if (every('boss_glitch_toggle', 150)) {
                     boss.mirrorActive = !boss.mirrorActive;
                     if (boss.mirrorActive) showAchievement('GLITCH', '镜像模式激活');
                 }
                 if (boss.mirrorActive) {
-                    if (frameCount % 30 === 0) {
+                    if (every('boss_glitch_fan', 30)) {
                         const ba = Math.atan2(player.y - boss.y, player.x - boss.x);
                         for (let i = -1; i <= 1; i++) {
                             bullets.push({ x: boss.x, y: boss.y, vx: Math.cos(ba + i * 0.3) * 4, vy: Math.sin(ba + i * 0.3) * 4, radius: 5, damage: 12, color: '#ff00ff', isEnemyBullet: true });
                         }
                     }
                 } else {
-                    if (frameCount % 50 === 0) {
+                    if (every('boss_glitch_scatter', 50)) {
                         for (let i = 0; i < 8; i++) {
                             const a = Math.random() * Math.PI * 2;
                             bullets.push({ x: boss.x, y: boss.y, vx: Math.cos(a) * 2.5, vy: Math.sin(a) * 2.5, radius: 4, damage: 8, color: '#ff80ff', isEnemyBullet: true });
@@ -369,7 +369,7 @@ const BOSS_TEMPLATES = [
                     }
                 }
                 const d = Math.sqrt((player.x - boss.x)**2 + (player.y - boss.y)**2);
-                if (d > 0) { boss.x += ((player.x - boss.x) / d) * boss.speed * timeScale; boss.y += ((player.y - boss.y) / d) * boss.speed * timeScale; }
+                if (d > 0) { boss.x += ((player.x - boss.x) / d) * boss.speed * timeScale * _dt; boss.y += ((player.y - boss.y) / d) * boss.speed * timeScale * _dt; }
             },
             onDeath(boss) { spawnParticles(boss.x, boss.y, '#ff00ff', 50, 10, 50); }
         }
@@ -379,8 +379,8 @@ const BOSS_TEMPLATES = [
         mechanisms: {
             init(boss) { boss.swarm = []; boss.spawnTimer = 0; },
             update(boss) {
-                boss.spawnTimer++;
-                if (boss.spawnTimer % 60 === 0 && boss.swarm.length < 15) {
+                boss.spawnTimer += _dt;
+                if (every('boss_swarm_spawn', 60) && boss.swarm.length < 15) {
                     const a = Math.random() * Math.PI * 2;
                     const spawn = { x: boss.x + Math.cos(a) * 30, y: boss.y + Math.sin(a) * 30, hp: 15, maxHp: 15, radius: 8, speed: 3, damage: 5, type: 'swarm', color: '#81c784', id: nextEnemyId++, isSwarm: true };
                     boss.swarm.push(spawn);
@@ -397,7 +397,7 @@ const BOSS_TEMPLATES = [
                     s.y += (targetY - s.y) * 0.05;
                 }
                 const d = Math.sqrt((player.x - boss.x)**2 + (player.y - boss.y)**2);
-                if (d > 0) { boss.x += ((player.x - boss.x) / d) * boss.speed * timeScale; boss.y += ((player.y - boss.y) / d) * boss.speed * timeScale; }
+                if (d > 0) { boss.x += ((player.x - boss.x) / d) * boss.speed * timeScale * _dt; boss.y += ((player.y - boss.y) / d) * boss.speed * timeScale * _dt; }
             },
             onDeath(boss) { for (const s of boss.swarm) { if (enemies.includes(s)) s.hp -= 50; } spawnParticles(boss.x, boss.y, '#4caf50', 60, 12, 60); }
         }
@@ -528,11 +528,11 @@ function applyEventEffect(id, data) {
 
 function updateEvents() {
     if (activeEvent) {
-        activeEvent.timer--;
+        activeEvent.timer -= _dt;
         if (activeEvent.timer <= 0) { hideEventPopup(); activeEvent = null; }
     }
-    eventCooldown--;
-    if (!activeEvent && eventCooldown <= 0 && Math.random() < 0.003) {
+    eventCooldown -= _dt;
+    if (!activeEvent && eventCooldown <= 0 && Math.random() < 0.003 * Math.min(_dt, 2)) {
         triggerEvent();
         eventCooldown = 600;
     }
@@ -853,31 +853,32 @@ function shoot() {
 
 // ==================== MAIN UPDATE ====================
 
-function update() {
+function update(dt) {
+    _dt = dt;
     if (state === GameState.MENU || state === GameState.GAME_OVER || state === GameState.DIFFICULTY_SELECT) return;
 
     if (gameSettings.timeScaleOverride !== 1.0) timeScale = gameSettings.timeScaleOverride;
 
     if (state === GameState.UPGRADE) {
-        upgradeTimeout--;
+        upgradeTimeout -= dt;
         if (upgradeTimeout <= 0 && showingUpgrade) selectUpgrade(Math.floor(Math.random() * upgradeOptions.length));
-        if (playerFireCooldown > 0) playerFireCooldown--;
-        if (playerInvincible > 0) playerInvincible--;
+        if (playerFireCooldown > 0) playerFireCooldown -= dt;
+        if (playerInvincible > 0) playerInvincible -= dt;
         return;
     }
 
     frameCount++;
-    survivalTime += 1 / 60 * timeScale;
+    survivalTime += (1 / 60) * timeScale * dt;
 
-    if (playerFireCooldown > 0) playerFireCooldown--;
-    if (playerInvincible > 0) playerInvincible--;
+    if (playerFireCooldown > 0) playerFireCooldown -= dt;
+    if (playerInvincible > 0) playerInvincible -= dt;
 
-    if (screenShake > 0) { screenShake *= 0.88; if (screenShake < 0.3) screenShake = 0; }
+    if (screenShake > 0) { screenShake *= Math.pow(0.88, dt); if (screenShake < 0.3) screenShake = 0; }
     screenShakeX = (Math.random() - 0.5) * screenShake * 2;
     screenShakeY = (Math.random() - 0.5) * screenShake * 2;
 
     // Combo
-    if (comboTimer > 0) comboTimer--;
+    if (comboTimer > 0) comboTimer -= dt;
     else {
         if (comboExpire && comboCount > 10) { damagePlayer(comboCount * 0.3, 'combo_expire'); spawnParticles(player.x, player.y, '#f39c12', 15, 3, 20); }
         comboCount = 0;
@@ -885,16 +886,16 @@ function update() {
     }
 
     // Kill streak
-    if (killStreakTimer > 0) killStreakTimer--;
+    if (killStreakTimer > 0) killStreakTimer -= dt;
     else killStreakCount = 0;
 
-    // Regen
-    if (playerRegen > 0 && frameCount % 30 === 0 && player.hp < player.maxHp && !vampireMode) {
+    // Regen (every 30 frames = 0.5s)
+    if (playerRegen > 0 && every('regen', 30) && player.hp < player.maxHp && !vampireMode) {
         player.hp = Math.min(player.maxHp, player.hp + playerRegen);
     }
 
-    // Shield regen
-    if (shieldRegenRate > 0 && frameCount % 60 === 0) {
+    // Shield regen (every 60 frames = 1s)
+    if (shieldRegenRate > 0 && every('shieldRegen', 60)) {
         playerShield += shieldRegenRate;
     }
 
@@ -902,7 +903,7 @@ function update() {
     if (pickupMagnet) {
         for (const pk of pickups) {
             const d = Math.sqrt((player.x - pk.x)**2 + (player.y - pk.y)**2);
-            if (d < 150 && d > 1) { pk.x += ((player.x - pk.x) / d) * 3; pk.y += ((player.y - pk.y) / d) * 3; }
+            if (d < 150 && d > 1) { pk.x += ((player.x - pk.x) / d) * 3 * dt; pk.y += ((player.y - pk.y) / d) * 3 * dt; }
         }
     }
 
@@ -911,7 +912,7 @@ function update() {
     updateEvents();
 
     // ==================== RULE CYCLE ====================
-    cycleTimer++;
+    cycleTimer += dt;
     if (cyclePhase === 'normal' && cycleTimer >= 10 * 60) {
         cyclePhase = 'warning'; cycleTimer = 0; state = GameState.WARNING;
         document.getElementById('ruleWarning').textContent = '⚠ RULE ANOMALY ⚠';
@@ -995,15 +996,15 @@ function update() {
 
     if (entropyBoost > 0) { player.vx *= (1 + entropyBoost * 0.015); player.vy *= (1 + entropyBoost * 0.015); }
 
-    player.x += player.vx * timeScale;
-    player.y += player.vy * timeScale;
+    player.x += player.vx * timeScale * dt;
+    player.y += player.vy * timeScale * dt;
 
     if (!ghostMode) {
         player.x = Math.max(player.radius, Math.min(960 - player.radius, player.x));
         player.y = Math.max(player.radius, Math.min(540 - player.radius, player.y));
         for (const w of walls) {
             if (rectCircleCollision(w, player)) {
-                player.x -= player.vx * timeScale; player.y -= player.vy * timeScale;
+                player.x -= player.vx * timeScale * dt; player.y -= player.vy * timeScale * dt;
                 player.vx *= -0.3; player.vy *= -0.3;
             }
         }
@@ -1020,7 +1021,7 @@ function update() {
     player.angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
 
     // Clones
-    for (let i = player.clones.length - 1; i >= 0; i--) { player.clones[i].life--; if (player.clones[i].life <= 0) player.clones.splice(i, 1); }
+    for (let i = player.clones.length - 1; i >= 0; i--) { player.clones[i].life -= dt; if (player.clones[i].life <= 0) player.clones.splice(i, 1); }
 
     // Mobile shooting
     if (isMobile && mobileShooting && playerFireCooldown <= 0 && (state === GameState.PLAYING || state === GameState.RULE_ACTIVE)) shoot();
@@ -1028,11 +1029,11 @@ function update() {
     // ==================== ENEMY SPAWNING ====================
     if (!bossActive) {
         if (gameSettings.stressTest) {
-            stressTestSpawnAccumulator += gameSettings.spawnMult;
+            stressTestSpawnAccumulator += gameSettings.spawnMult * dt;
             while (stressTestSpawnAccumulator >= 1) { spawnEnemy(); stressTestSpawnAccumulator -= 1; }
         } else {
             const spawnRate = Math.max(22, Math.floor((100 - wave * 5) * currentDifficulty.spawnRateMod));
-            if (frameCount % spawnRate === 0) spawnEnemy();
+            if (every('spawn', spawnRate)) spawnEnemy();
         }
         const maxE = gameSettings.stressTest ? gameSettings.maxEnemies : 500;
         if (enemies.length > maxE) {
@@ -1047,8 +1048,8 @@ function update() {
 
         if (e.type === 'boss' && e.mechanisms && e.mechanisms.update) e.mechanisms.update(e);
 
-        // Elite regen
-        if (e.elite && e.regenRate && frameCount % 30 === 0) e.hp = Math.min(e.maxHp, e.hp + e.regenRate);
+        // Elite regen (every 0.5s)
+        if (e.elite && e.regenRate && every('eliteRegen', 30)) e.hp = Math.min(e.maxHp, e.hp + e.regenRate);
 
         const edx = player.x - e.x, edy = player.y - e.y;
         const edist = Math.sqrt(edx * edx + edy * edy);
@@ -1059,14 +1060,14 @@ function update() {
             if (repulsionField && edist < 100) spd *= 0.5;
             // Frost aura
             if (e.frostAura && edist < 100) playerSpeedMult *= 0.98;
-            e.x += (edx / edist) * spd * timeScale;
-            e.y += (edy / edist) * spd * timeScale;
+            e.x += (edx / edist) * spd * timeScale * dt;
+            e.y += (edy / edist) * spd * timeScale * dt;
         }
 
         if (enemyInvisible) {
             e.invisible = true;
             if (edist < 85) { e.invisible = false; e.revealTimer = 25; }
-            if (e.revealTimer > 0) { e.revealTimer--; e.invisible = false; }
+            if (e.revealTimer > 0) { e.revealTimer -= dt; e.invisible = false; }
         } else { e.invisible = false; }
 
         if (edist < player.radius + e.radius && playerInvincible <= 0 && !ghostMode) {
@@ -1078,7 +1079,7 @@ function update() {
         if (!ghostMode) {
             for (const w of walls) {
                 if (e.x > w.x - w.width / 2 && e.x < w.x + w.width / 2 && e.y > w.y - w.height / 2 && e.y < w.y + w.height / 2) {
-                    e.x -= (edx / edist) * e.speed * timeScale; e.y -= (edy / edist) * e.speed * timeScale;
+                    e.x -= (edx / edist) * e.speed * timeScale * dt; e.y -= (edy / edist) * e.speed * timeScale * dt;
                 }
             }
         }
@@ -1096,8 +1097,8 @@ function update() {
     // ==================== UPDATE BULLETS ====================
     for (let i = bullets.length - 1; i >= 0; i--) {
         const b = bullets[i];
-        b.x += b.vx * timeScale;
-        b.y += b.vy * timeScale;
+        b.x += b.vx * timeScale * dt;
+        b.y += b.vy * timeScale * dt;
 
         // Homing for player bullets
         if (b.homing && !b.isEnemyBullet) {
@@ -1109,7 +1110,7 @@ function update() {
             if (nearest) {
                 const hdx = nearest.x - b.x, hdy = nearest.y - b.y;
                 const hd = Math.sqrt(hdx * hdx + hdy * hdy);
-                if (hd > 0) { b.vx += (hdx / hd) * (b.homingStrength || 0.05); b.vy += (hdy / hd) * (b.homingStrength || 0.05); }
+                if (hd > 0) { b.vx += (hdx / hd) * (b.homingStrength || 0.05) * dt; b.vy += (hdy / hd) * (b.homingStrength || 0.05) * dt; }
             }
         }
 
@@ -1117,7 +1118,7 @@ function update() {
         if (b.homing && b.isEnemyBullet) {
             const hdx = player.x - b.x, hdy = player.y - b.y;
             const hd = Math.sqrt(hdx * hdx + hdy * hdy);
-            if (hd > 0) { b.vx += (hdx / hd) * (b.homingStrength || 0.05); b.vy += (hdy / hd) * (b.homingStrength || 0.05); }
+            if (hd > 0) { b.vx += (hdx / hd) * (b.homingStrength || 0.05) * dt; b.vy += (hdy / hd) * (b.homingStrength || 0.05) * dt; }
         }
 
         if (bulletBounce && !b.isEnemyBullet) {
@@ -1309,10 +1310,10 @@ function update() {
     }
 
     // ==================== UPDATE WALLS / PICKUPS / PARTICLES ====================
-    for (let i = walls.length - 1; i >= 0; i--) { walls[i].life--; if (walls[i].life <= 0) walls.splice(i, 1); }
+    for (let i = walls.length - 1; i >= 0; i--) { walls[i].life -= dt; if (walls[i].life <= 0) walls.splice(i, 1); }
 
     for (let i = pickups.length - 1; i >= 0; i--) {
-        pickups[i].life--;
+        pickups[i].life -= dt;
         if (pickups[i].life <= 0) { pickups.splice(i, 1); continue; }
         const pd = Math.sqrt((player.x - pickups[i].x)**2 + (player.y - pickups[i].y)**2);
         if (pd < player.radius + 16) {
@@ -1333,9 +1334,9 @@ function update() {
 
     for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
-        p.x += p.vx * timeScale; p.y += p.vy * timeScale;
-        if (p.vx !== undefined) { p.vx *= 0.97; p.vy *= 0.97; }
-        p.life--;
+        p.x += p.vx * timeScale * dt; p.y += p.vy * timeScale * dt;
+        if (p.vx !== undefined) { p.vx *= Math.pow(0.97, dt); p.vy *= Math.pow(0.97, dt); }
+        p.life -= dt;
         if (p.life <= 0) particles.splice(i, 1);
     }
 
