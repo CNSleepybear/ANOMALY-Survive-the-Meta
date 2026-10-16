@@ -3,6 +3,22 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const container = document.getElementById('gameContainer');
+const viewport = document.getElementById('gameViewport');
+
+function resizePresentation() {
+    const scale = viewport.clientWidth / 960;
+    container.style.setProperty('--game-scale', scale);
+    const resolution = Math.min(2.5, Math.max(1, scale * (window.devicePixelRatio || 1)));
+    canvas.width = Math.round(960 * resolution);
+    canvas.height = Math.round(540 * resolution);
+    ctx.setTransform(canvas.width / 960, 0, 0, canvas.height / 540, 0, 0);
+}
+
+new ResizeObserver(resizePresentation).observe(viewport);
+resizePresentation();
+document.querySelectorAll('[data-art-icon]').forEach(element => {
+    element.innerHTML = artIcon(element.dataset.artIcon);
+});
 window.addEventListener('blur', () => { mouse.down = false; });
 
 // FPS tracking
@@ -104,14 +120,14 @@ document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; }
 // 鼠标事件绑到 gameContainer，防止被 uiLayer 遮挡
 gameContainer.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
-    mouse.x = (e.clientX - rect.left) * (canvas.width / rect.width);
-    mouse.y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    mouse.x = (e.clientX - rect.left) * (960 / rect.width);
+    mouse.y = (e.clientY - rect.top) * (540 / rect.height);
 });
 
 gameContainer.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
     // 如果点击的是按钮/面板/弹窗，不触发射击和音频
-    if (e.target.closest('.btn, .settings-panel, .settings-btn, .meta-panel, .upgrade-option, .difficulty-btn')) return;
+    if (e.target.closest('.btn, .settings-panel, .settings-btn, .meta-panel, .upgrade-option, .difficulty-btn, .weapon-slot, .skill-slot')) return;
     initAudio(); startBGM();
     mouse.down = true;
     if (state === GameState.PLAYING || state === GameState.RULE_ACTIVE) shoot();
@@ -143,10 +159,11 @@ setInterval(() => {
 // ==================== MOBILE CONTROLS ====================
 
 function detectMobile() {
-    return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 768);
+    return window.matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && window.matchMedia('(hover: none)').matches);
 }
 
 isMobile = detectMobile();
+container.classList.toggle('is-mobile', isMobile);
 if (isMobile) document.getElementById('mobileControls').style.display = 'block';
 
 const joystickZone = document.getElementById('joystickZone');
@@ -186,6 +203,7 @@ mobileSwitchBtn.addEventListener('touchstart', (e) => {
 
 window.addEventListener('resize', () => {
     isMobile = detectMobile();
+    container.classList.toggle('is-mobile', isMobile);
     const mc = document.getElementById('mobileControls');
     if (mc) mc.style.display = isMobile ? 'block' : 'none';
 });
@@ -216,6 +234,7 @@ document.getElementById('difficultySelectBtn').addEventListener('click', () => {
 document.getElementById('difficultyConfirmBtn').addEventListener('click', () => {
     const selected = document.querySelector('.difficulty-btn.selected');
     if (selected) setDifficulty(selected.dataset.diff);
+    updateHUD();
     document.getElementById('difficultyScreen').classList.remove('active');
     document.getElementById('startScreen').style.display = 'flex';
 });
@@ -252,6 +271,14 @@ document.querySelectorAll('.weapon-slot').forEach(slot => {
         }
     });
 });
+document.querySelectorAll('.skill-slot').forEach(slot => {
+    slot.addEventListener('click', () => {
+        if (state === GameState.PLAYING || state === GameState.RULE_ACTIVE) {
+            activateSkill(Number(slot.dataset.skill));
+            updateHUD();
+        }
+    });
+});
 
 // Meta Progress buttons
 document.getElementById('metaBtn').addEventListener('click', () => {
@@ -275,6 +302,7 @@ document.getElementById('metaCloseBtn').addEventListener('click', () => {
 initRenderer();
 updateHUD();
 updateWeaponHUD();
+syncSettingsToUI();
 gameLoop();
 
 console.log('%c[ANOMALY] System initialized', 'color: #00ff66; font-family: monospace; font-size: 14px;');

@@ -24,7 +24,7 @@ let killStreakTimer = 0;
 // ==================== GAME SETTINGS ====================
 const gameSettings = {
     stressTest: false, spawnMult: 1, maxEnemies: 200,
-    godMode: false, autoFire: false, showPerf: true, timeScaleOverride: 1.0
+    godMode: false, autoFire: false, showPerf: false, timeScaleOverride: 1.0
 };
 let stressTestSpawnAccumulator = 0;
 
@@ -600,6 +600,7 @@ const achievements = {
 };
 
 function spawnParticles(x, y, color, count = 8, size = 3, life = 25) {
+    if (count >= 8) AnomalyArt.addBurst(x, y, color, size);
     for (let i = 0; i < count; i++) {
         const angle = Math.random() * Math.PI * 2;
         const speed = 2 + Math.random() * 6;
@@ -676,6 +677,9 @@ function gameOver() {
 }
 
 function updateHUD() {
+    const minutes = Math.floor(survivalTime / 60).toString().padStart(2, '0');
+    const seconds = Math.floor(survivalTime % 60).toString().padStart(2, '0');
+    document.getElementById('sessionTime').textContent = `${minutes}:${seconds}`;
     document.getElementById('hpValue').textContent = Math.ceil(player.hp);
     document.getElementById('hpBar').style.width = `${(player.hp / player.maxHp) * 100}%`;
     document.getElementById('hpBar').className = playerShield > 0 ? 'hp-fill shield' : 'hp-fill';
@@ -707,6 +711,7 @@ function updateHUD() {
 }
 
 function updateWeaponHUD() {
+    document.getElementById('weaponName').textContent = weapons[player.currentWeapon].name;
     document.querySelectorAll('.weapon-slot').forEach(s => {
         s.classList.toggle('active', parseInt(s.dataset.w) === player.currentWeapon);
     });
@@ -819,6 +824,8 @@ function shoot() {
     playerFireCooldown = cd;
 
     if (ammoLimited && currentAmmo <= 0) { playerFireCooldown = 60; return; }
+    AnomalyArt.muzzleUntil = AnomalyArt.time + .06;
+    AnomalyArt.muzzleColor = w.color;
 
     let baseAngle = player.angle;
     if (reverseBullet) baseAngle += Math.PI;
@@ -1366,6 +1373,8 @@ function initGame() {
     lastDamageSource = ''; nextEnemyId = 0; nextBossIndex = 0;
     killStreakCount = 0; killStreakTimer = 0;
     damageNumbers = [];
+    AnomalyArt.muzzleUntil = 0;
+    AnomalyArt.bursts = [];
 
     activeStatusEffects = []; skillCooldowns = [0, 0, 0, 0];
     timeWarpActive = false; timeWarpTimer = 0;

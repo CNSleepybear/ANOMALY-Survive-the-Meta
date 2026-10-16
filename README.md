@@ -10,7 +10,23 @@
 
 ## 游戏预览
 
+![主菜单](./assets/menu-preview.png)
+
 ![游戏截图](./assets/screenshot.png)
+
+---
+
+## 美术升级 · 废弃轨道实验场
+
+借鉴《Nova Drift》的敌我轮廓可读性与《SYNTHETIK》的工业材质语言，使用原创 Canvas / SVG 绘制，不使用参考游戏的素材。
+
+- **场景**：金属地板、接缝、铆钉、排风槽、警戒边界与反应堆刻线；静态背景预渲染缓存。
+- **机体**：装甲翼板、发光核心、双引擎尾焰；七种 Boss 使用不同轮廓与武器布局。
+- **战斗**：弹道拖尾、枪口闪光、命中闪烁、冲击波、火花和分色拾取物；重绘熔岩、裂隙与源码障碍。
+- **界面**：统一薄荷绿 / 枪钢蓝 / 警戒红配色，重做菜单、HUD、强化、研发、难度与结算，替换主要 emoji 图标。
+- **显示**：保留 960 × 540 逻辑战场，独立适配容器缩放与高 DPI；触屏横屏优先，支持减少装饰动效。
+
+美术规范和回归检查见 [ART_DIRECTION.md](./ART_DIRECTION.md)。
 
 ---
 
@@ -115,8 +131,8 @@
 
 ## 技术特性
 
-- **Matrix 数字雨背景** - 沉浸式黑客环境
-- **CRT 扫描线效果** - 复古终端质感
+- **工业实验场背景** - 缓存金属地板与结构细节
+- **轻量扫描线效果** - 不干扰敌我轮廓的终端质感
 - **Glitch 故障艺术** - 规则异常时的视觉扰动
 - **完整音效系统** - Web Audio API 合成动态音效
 - **动态 BGM** - 程序化生成的环境电子音
@@ -162,16 +178,20 @@ npx http-server -p 8000
 anomaly-survive-the-meta/
 ├── index.html          # 游戏主入口
 ├── css/
-│   └── style.css       # 赛博朋克视觉样式
+│   ├── style.css       # 原有界面结构与动效
+│   └── art-direction.css # 统一美术主题与适配
 ├── js/
 │   ├── main.js         # 主入口与游戏循环
 │   ├── engine.js       # 核心游戏引擎
-│   ├── renderer.js     # 渲染管线 (Matrix + CRT)
+│   ├── art.js          # 原创程序化机体、场景与SVG图标
+│   ├── renderer.js     # 战场、实体、特效与HUD渲染
 │   ├── rules.js        # 25+ 规则异常系统
 │   ├── upgrades.js     # 升级养成系统
 │   └── audio.js        # 音效与BGM引擎
 ├── assets/
-│   └── screenshot.png  # 游戏截图
+│   ├── core-mark.svg    # 核心标志
+│   ├── menu-preview.png # 主菜单预览
+│   └── screenshot.png  # 战斗美术演示截图
 └── README.md
 ```
 
@@ -195,5 +215,6 @@ anomaly-survive-the-meta/
 ## Credits
 
 - 游戏设计与开发: 基于 ANOMALY 系列融合升级
-- 字体: Fira Code, Noto Sans SC (Google Fonts)
+- 字体: 系统 Bahnschrift / Consolas / Microsoft YaHei，无外部字体请求
+- 美术方向参考: Nova Drift、SYNTHETIK；仅参考视觉原则，不复用资产
 - 灵感: 赛博朋克美学、肉鸽设计理念

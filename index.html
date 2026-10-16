@@ -5,9 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>规则异常 // ANOMALY: SURVIVE THE META</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/art-direction.css">
+    <link rel="icon" href="assets/core-mark.svg" type="image/svg+xml">
     <base target="_blank">
 </head>
 <body>
+    <header class="shell-header">
+        <a class="shell-brand" href="./" target="_self"><img src="assets/core-mark.svg" alt="">ANOMALY<span>规则异常</span></a>
+        <div class="shell-status"><i></i> LOCAL SIMULATION <span>// SECTOR 07</span></div>
+    </header>
+    <main id="gameViewport" aria-label="规则异常游戏">
     <div id="gameContainer">
         <canvas id="gameCanvas" width="960" height="540"></canvas>
         <div class="glitch-overlay" id="glitchOverlay"></div>
@@ -18,29 +25,30 @@
             <!-- Top HUD -->
             <div class="hud-top">
                 <div class="hud-card" id="cardHp">
-                    <div class="hud-label">▶ System_Integrity</div>
+                    <div class="hud-label">核心完整度 / INTEGRITY</div>
                     <div class="hud-value" id="hpValue">100</div>
                     <div class="hp-bar"><div class="hp-fill" id="hpBar" style="width:100%"></div></div>
                     <div class="xp-bar"><div class="xp-fill" id="xpBar" style="width:0%"></div></div>
                     <div class="hud-label" style="margin-top:2px;">LV.<span id="lvlValue">1</span></div>
                 </div>
                 <div class="hud-card">
-                    <div class="hud-label">▶ Meta_Iteration</div>
+                    <div class="hud-label">迭代 / WAVE</div>
                     <div class="hud-value" id="waveValue">1</div>
                 </div>
                 <div class="hud-card">
-                    <div class="hud-label">▶ Data_Harvested</div>
+                    <div class="hud-label">数据 / SCORE</div>
                     <div class="hud-value" id="scoreValue">0</div>
                 </div>
                 <div class="hud-card">
-                    <div class="hud-label">▶ Difficulty</div>
+                    <div class="hud-label">协议 / MODE</div>
                     <div class="hud-value" id="difficultyDisplay" style="font-size:14px;">普通</div>
                 </div>
                 <div class="hud-card" id="comboBlock">
-                    <div class="hud-label">▶ Chain_Combo</div>
+                    <div class="hud-label">连锁 / COMBO</div>
                     <div class="hud-value" id="comboValue" style="color:#f39c12;">x1</div>
                 </div>
             </div>
+            <div class="session-clock"><i></i> LIVE <span id="sessionTime">00:00</span></div>
 
             <!-- Minimap -->
             <div class="minimap" id="minimap"></div>
@@ -82,38 +90,39 @@
 
             <!-- Weapon HUD -->
             <div class="weapon-hud" id="weaponHud">
-                <div class="weapon-slot active" data-w="0">🔫<span class="key-hint">1</span></div>
-                <div class="weapon-slot" data-w="1">💥<span class="key-hint">2</span></div>
-                <div class="weapon-slot" data-w="2">⚡<span class="key-hint">3</span></div>
-                <div class="weapon-slot" data-w="3">🎯<span class="key-hint">4</span></div>
+                <button class="weapon-slot active" data-w="0" title="1 · 脉冲手枪" aria-label="脉冲手枪"><span data-art-icon="pulse"></span><span class="key-hint">1</span></button>
+                <button class="weapon-slot" data-w="1" title="2 · 散弹爆裂" aria-label="散弹爆裂"><span data-art-icon="burst"></span><span class="key-hint">2</span></button>
+                <button class="weapon-slot" data-w="2" title="3 · 速射风暴" aria-label="速射风暴"><span data-art-icon="bolt"></span><span class="key-hint">3</span></button>
+                <button class="weapon-slot" data-w="3" title="4 · 穿透狙击" aria-label="穿透狙击"><span data-art-icon="target"></span><span class="key-hint">4</span></button>
+                <div class="weapon-readout"><span>ACTIVE WEAPON</span><strong id="weaponName">脉冲手枪</strong></div>
             </div>
 
             <!-- Skill HUD -->
             <div class="skill-hud" id="skillHud">
-                <div class="skill-slot" id="skill0" data-skill="0">
-                    <div class="skill-icon">⚡</div>
+                <button class="skill-slot" id="skill0" data-skill="0" aria-label="相位冲刺 Z">
+                    <div class="skill-icon" data-art-icon="dash"></div>
                     <div class="skill-name">相位冲刺</div>
                     <div class="skill-key">Z</div>
                     <div class="skill-cd"><div class="skill-cd-fill"></div></div>
-                </div>
-                <div class="skill-slot" id="skill1" data-skill="1">
-                    <div class="skill-icon">💥</div>
+                </button>
+                <button class="skill-slot" id="skill1" data-skill="1" aria-label="脉冲新星 X">
+                    <div class="skill-icon" data-art-icon="burst"></div>
                     <div class="skill-name">脉冲新星</div>
                     <div class="skill-key">X</div>
                     <div class="skill-cd"><div class="skill-cd-fill"></div></div>
-                </div>
-                <div class="skill-slot" id="skill2" data-skill="2">
-                    <div class="skill-icon">⏳</div>
+                </button>
+                <button class="skill-slot" id="skill2" data-skill="2" aria-label="时间裂隙 C">
+                    <div class="skill-icon" data-art-icon="clock"></div>
                     <div class="skill-name">时间裂隙</div>
                     <div class="skill-key">C</div>
                     <div class="skill-cd"><div class="skill-cd-fill"></div></div>
-                </div>
-                <div class="skill-slot" id="skill3" data-skill="3">
-                    <div class="skill-icon">🛡️</div>
+                </button>
+                <button class="skill-slot" id="skill3" data-skill="3" aria-label="紧急部署 V">
+                    <div class="skill-icon" data-art-icon="shield"></div>
                     <div class="skill-name">紧急部署</div>
                     <div class="skill-key">V</div>
                     <div class="skill-cd"><div class="skill-cd-fill"></div></div>
-                </div>
+                </button>
             </div>
 
             <!-- Notification Log -->
@@ -158,7 +167,7 @@
             </div>
         </div>
 
-        <div class="settings-btn" id="settingsBtn">⚙</div>
+        <button class="settings-btn" id="settingsBtn" title="系统设置" aria-label="系统设置" data-art-icon="gear"></button>
 
         <!-- Settings Panel -->
         <div class="settings-panel" id="settingsPanel">
@@ -217,66 +226,74 @@
 
         <!-- Meta Progress Panel -->
         <div class="meta-panel" id="metaPanel">
-            <div class="meta-title">META PROGRESSION</div>
-            <div class="meta-currency">数据碎片: <span id="metaCurrency">0</span> 💎</div>
+            <div class="screen-eyebrow">PERSISTENT MEMORY / 永久强化</div>
+            <div class="meta-title">核心研发</div>
+            <div class="meta-currency">可用数据碎片 <span id="metaCurrency">0</span> ◇</div>
             <div class="meta-grid" id="metaGrid"></div>
-            <button class="btn" id="metaCloseBtn" style="margin-top:16px;">CLOSE</button>
+            <button class="btn" id="metaCloseBtn">返回终端 / CLOSE</button>
         </div>
 
         <!-- Difficulty Screen -->
         <div id="difficultyScreen">
+            <div class="screen-eyebrow">THREAT ASSESSMENT / 威胁评估</div>
             <h1 class="glitch-title">选择难度</h1>
             <div class="subtitle">SELECT DIFFICULTY PROTOCOL</div>
             <div class="difficulty-grid">
-                <div class="difficulty-btn" data-diff="easy">
+                <button class="difficulty-btn" data-diff="easy">
+                    <div class="diff-index">01 / STABLE</div>
                     <div class="diff-name">简单</div>
                     <div class="diff-desc">EASY MODE</div>
                     <div class="diff-stats">敌人-40% | 伤害-50% | 分数x0.7</div>
-                </div>
-                <div class="difficulty-btn selected" data-diff="normal">
+                </button>
+                <button class="difficulty-btn selected" data-diff="normal">
+                    <div class="diff-index">02 / UNSTABLE</div>
                     <div class="diff-name">普通</div>
                     <div class="diff-desc">NORMAL MODE</div>
                     <div class="diff-stats">标准体验</div>
-                </div>
-                <div class="difficulty-btn" data-diff="hard">
+                </button>
+                <button class="difficulty-btn" data-diff="hard">
+                    <div class="diff-index">03 / CRITICAL</div>
                     <div class="diff-name">困难</div>
                     <div class="diff-desc">HARD MODE</div>
                     <div class="diff-stats">敌人+60% | 伤害+50% | 分数x1.5</div>
-                </div>
-                <div class="difficulty-btn" data-diff="nightmare">
+                </button>
+                <button class="difficulty-btn" data-diff="nightmare">
+                    <div class="diff-index">04 / COLLAPSE</div>
                     <div class="diff-name">炼狱</div>
                     <div class="diff-desc">NIGHTMARE MODE</div>
                     <div class="diff-stats">敌人+150% | 伤害+120% | 分数x2.5</div>
-                </div>
+                </button>
             </div>
-            <button class="btn" id="difficultyConfirmBtn">CONFIRM PROTOCOL</button>
+            <div class="screen-actions">
+                <button class="btn secondary" id="difficultyBackBtn">返回</button>
+                <button class="btn primary" id="difficultyConfirmBtn">确认协议 →</button>
+            </div>
         </div>
 
         <!-- Start Screen -->
         <!-- 1. 移除 style="display:none" -->
         <div id="startScreen">
-            <h1 class="glitch-title">规则异常</h1>
-            <div class="subtitle">ANOMALY: SURVIVE THE META</div>
-            <button class="btn" id="startBtn">INITIALIZE CORE</button>
-            <!-- 新增难度选择入口 -->
-            <button class="btn" id="difficultySelectBtn" style="border-color:#3498db;color:#3498db;box-shadow:0 0 15px rgba(52,152,219,0.2),inset 0 0 15px rgba(52,152,219,0.1);">SELECT DIFFICULTY</button>
-            <button class="btn" id="metaBtn" style="border-color:#ffd700;color:#ffd700;box-shadow:0 0 15px rgba(255,215,0,0.2),inset 0 0 15px rgba(255,215,0,0.1);">META PROGRESS</button>
-            <div class="hint">...</div>
-        </div>
-
-        <!-- 难度屏默认由 CSS 控制隐藏，新增 BACK 按钮 -->
-        <div id="difficultyScreen">
-            <h1 class="glitch-title">选择难度</h1>
-            ...
-            <div style="display:flex;gap:8px;">
-                <button class="btn" id="difficultyBackBtn" style="border-color:#ff0055;color:#ff0055;box-shadow:0 0 15px rgba(255,0,85,0.2),inset 0 0 15px rgba(255,0,85,0.1);">BACK</button>
-                <button class="btn" id="difficultyConfirmBtn">CONFIRM PROTOCOL</button>
+            <div class="menu-topline"><span><i></i> CORE ONLINE</span><span>EXPERIMENT NO. 007</span></div>
+            <div class="menu-copy">
+                <div class="screen-eyebrow">ROGUELITE / SURVIVAL / SYSTEM FAILURE</div>
+                <h1 class="menu-title">ANOMALY<span>规则异常</span></h1>
+                <div class="menu-subtitle">SURVIVE THE META</div>
+                <p class="menu-description">世界每 13 秒重写一次。<br>你，是规则之外的最后一个变量。</p>
+                <button class="btn primary" id="startBtn"><span>启动核心</span><small>INITIALIZE CORE</small><b>↗</b></button>
+                <div class="menu-secondary">
+                    <button class="btn secondary" id="difficultySelectBtn"><span data-art-icon="target"></span>难度协议</button>
+                    <button class="btn secondary" id="metaBtn"><span data-art-icon="core"></span>核心研发</button>
+                </div>
+                <div class="menu-controls"><span><kbd>W A S D</kbd> 移动</span><span><kbd>鼠标</kbd> 瞄准 / 射击</span><span><kbd>1–4</kbd> 武器</span></div>
             </div>
+            <div class="hero-annotation"><span>ANM–01 / AUTONOMOUS CORE</span><strong>异常适应型战斗机体</strong><div>STATUS <i></i> AWAITING DEPLOYMENT</div></div>
+            <div class="menu-bottomline"><span>54 MUTATIONS <b>/</b> 7 BOSSES <b>/</b> NO TWO RUNS ALIKE</span><span>ADAPT. SURVIVE. REWRITE.</span></div>
         </div>
 
         <!-- Game Over Screen -->
         <div id="gameOverScreen" style="display:none;">
-            <div class="game-over-title">CORE_FAILURE</div>
+            <div class="screen-eyebrow">CONNECTION LOST / 连接中断</div>
+            <div class="game-over-title">核心失联</div>
             <div class="death-reason" id="deathReason">System termination</div>
             <div class="final-stats">
                 Survival: <span class="num" id="finalTime">0</span>s |
@@ -290,13 +307,16 @@
             <div class="build-signature" id="buildSignature">ANM-1-1-1-1-1-NO-0</div>
             <div class="build-signature-label">BUILD SIGNATURE (可复制分享)</div>
             <div style="font-size:10px;color:#ffd700;margin-top:6px;">获得 <span id="shardsEarned">0</span> 数据碎片 💎</div>
-            <button class="btn" id="restartBtn" style="border-color:#ff0055;color:#ff0055;box-shadow:0 0 15px rgba(255,0,85,0.2),inset 0 0 15px rgba(255,0,85,0.1);">REBOOT SYSTEM</button>
-            <button class="btn" id="metaBtnGameOver" style="border-color:#ffd700;color:#ffd700;font-size:10px;padding:8px 20px;">META PROGRESS</button>
+            <button class="btn primary" id="restartBtn">返回终端 / REBOOT →</button>
+            <button class="btn secondary" id="metaBtnGameOver">核心研发 / META PROGRESS</button>
         </div>
     </div>
+    </main>
+    <footer class="shell-footer"><span class="desktop-tagline">每一次异常，都是一次进化。</span><span class="touch-hint">推荐横屏 · 左侧移动 / 右侧射击</span><span class="shell-controls"><kbd>Z X C V</kbd> 技能 <b>·</b> <kbd>SHIFT</kbd> 自动射击 <b>·</b> <kbd>F</kbd> 超频</span><span class="shell-version">OFFLINE READY / V.02</span></footer>
 
     <script src="js/audio.js"></script>
     <script src="js/rules.js"></script>
+    <script src="js/art.js"></script>
     <script src="js/upgrades.js"></script>
     <script src="js/renderer.js"></script>
     <script src="js/engine.js"></script>

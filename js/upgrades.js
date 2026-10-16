@@ -98,13 +98,13 @@ function renderMetaPanel() {
         const cost = upg.cost * (lvl + 1);
         const maxed = lvl >= upg.max;
         const canBuy = metaShards >= cost && !maxed;
-        const el = document.createElement('div');
+        const el = document.createElement('button');
         el.className = `meta-item ${maxed ? 'owned' : (canBuy ? '' : 'locked')}`;
         el.innerHTML = `
-            <div class="meta-icon">${upg.icon}</div>
+            <div class="meta-icon">${artIcon(upgradeArtIcon(upg))}</div>
             <div class="meta-name">${upg.name}</div>
             <div class="meta-desc">${upg.desc}</div>
-            <div class="meta-cost">${maxed ? 'MAX' : `${cost} 💎 (Lv.${lvl}/${upg.max})`}</div>
+            <div class="meta-cost">${maxed ? 'MAX / 已完成' : `${cost} ◇ · LV.${lvl}/${upg.max}`}</div>
         `;
         if (canBuy) el.addEventListener('click', () => buyMetaUpgrade(upg.id));
         grid.appendChild(el);
@@ -464,19 +464,23 @@ function renderUpgradePopup() {
     const popup = document.getElementById('upgradePopup');
     popup.innerHTML = '';
     popup.classList.add('active');
+    const heading = document.createElement('div');
+    heading.className = 'upgrade-header';
+    heading.innerHTML = '<div><span>CORE EVOLUTION / 核心进化</span><h2>选择强化模块</h2></div><small>按数字键选择 · 超时自动编译</small>';
+    popup.appendChild(heading);
 
     if (currentBuildPath !== 'none') {
         const bl = document.createElement('div');
         bl.className = 'build-path-label';
-        const pn = { attack: '⚔️ 攻击路线', defense: '🛡️ 防守路线', speed: '⚡ 速度路线' };
+        const pn = { attack: '攻击路线 / ASSAULT', defense: '防守路线 / DEFENSE', speed: '速度路线 / MOBILITY' };
         bl.textContent = `当前: ${pn[currentBuildPath]}`;
         popup.appendChild(bl);
     }
 
     upgradeOptions.forEach((opt, i) => {
-        const btn = document.createElement('div');
+        const btn = document.createElement('button');
         btn.className = 'upgrade-option' + (opt.buildPath === currentBuildPath && currentBuildPath !== 'none' ? ' preferred-upgrade' : '') + (RISKY_UPGRADES.includes(opt) ? ' risky' : '');
-        btn.innerHTML = `<span class="upgrade-icon">${opt.icon}</span><span class="upgrade-name">${opt.name}</span><span class="upgrade-desc">${opt.desc}</span><span class="upgrade-key">[${i + 1}]</span>`;
+        btn.innerHTML = `<span class="upgrade-icon">${artIcon(upgradeArtIcon(opt))}</span><span class="upgrade-name">${opt.name}</span><span class="upgrade-desc">${opt.desc}</span><span class="upgrade-key">${i + 1}</span>`;
         btn.addEventListener('click', (e) => { e.stopPropagation(); selectUpgrade(i); });
         btn.addEventListener('touchend', (e) => { e.stopPropagation(); e.preventDefault(); selectUpgrade(i); });
         popup.appendChild(btn);
